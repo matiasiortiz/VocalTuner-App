@@ -1,0 +1,7 @@
+{
+  "name": "VocalTune & Coro",
+  "description": "Una aplicación avanzada de vocalización y coro con entrenamiento de escalas interactivas, metrónomo profesional y recursos de salud vocal.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
