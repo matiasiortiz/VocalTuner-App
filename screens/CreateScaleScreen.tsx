@@ -1,15 +1,35 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { NOTE_FREQUENCIES } from '../constants';
 import { audioService } from '../services/audioService';
-import { DurationType, SequenceNote } from '../types';
+import { DurationType, SequenceNote, ScaleItem } from '../types';
 
 const CreateScaleScreen: React.FC = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [scaleName, setScaleName] = useState('');
   const [selectedDuration, setSelectedDuration] = useState<DurationType>('quarter');
   const [sequence, setSequence] = useState<SequenceNote[]>([]);
+  const [showClearModal, setShowClearModal] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      try {
+        const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
+        const scaleToEdit = savedScales.find((s: any) => s.id.toString() === id.toString());
+        if (scaleToEdit) {
+          setScaleName(scaleToEdit.name);
+          setSequence(scaleToEdit.notes);
+        } else {
+          navigate('/scales');
+        }
+      } catch (e) {
+        console.error("Error loading scale to edit", e);
+        navigate('/scales');
+      }
+    }
+  }, [id, navigate]);
 
   const addNote = (note: string) => {
     const newItem: SequenceNote = { note, duration: selectedDuration };
@@ -22,37 +42,52 @@ const CreateScaleScreen: React.FC = () => {
     setSequence(prev => prev.slice(0, -1));
   };
 
-  const clearAll = () => {
+  const requestClear = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowClearModal(true);
+  };
+
+  const confirmClear = () => {
     setSequence([]);
+    setShowClearModal(false);
   };
 
   const handleSave = () => {
-    if (!scaleName.trim() || sequence.length === 0) {
-      alert("Por favor, ingresa un nombre y al menos una nota.");
+    if (!scaleName.trim()) {
+      alert("Por favor, ingresa un nombre para la escala.");
+      return;
+    }
+    if (sequence.length === 0) {
+      alert("Por favor, añade al menos una nota.");
       return;
     }
 
-    const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
-    const newScale = {
-      id: Date.now().toString(),
-      name: scaleName,
-      notes: sequence,
-      createdAt: Date.now()
-    };
-    
-    localStorage.setItem('vocal_scales', JSON.stringify([...savedScales, newScale]));
-    navigate('/scales');
+    try {
+      const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
+      if (id) {
+        const updatedScales = savedScales.map((s: any) => 
+          s.id.toString() === id.toString() ? { ...s, name: scaleName, notes: sequence } : s
+        );
+        localStorage.setItem('vocal_scales', JSON.stringify(updatedScales));
+      } else {
+        const newScale = {
+          id: Date.now().toString(),
+          name: scaleName,
+          notes: sequence,
+          createdAt: Date.now()
+        };
+        localStorage.setItem('vocal_scales', JSON.stringify([...savedScales, newScale]));
+      }
+      navigate('/scales');
+    } catch (e) {
+      console.error("Error saving scale", e);
+    }
   };
 
   const playSequence = async () => {
-    const durMap: Record<DurationType, number> = { 'whole': 1.6, 'half': 0.8, 'quarter': 0.4, 'eighth': 0.2 };
-    for (const item of sequence) {
-      const freq = NOTE_FREQUENCIES[item.note];
-      if (freq) {
-        audioService.playNote(freq, durMap[item.duration]);
-        await new Promise(r => setTimeout(r, durMap[item.duration] * 1000 + 50));
-      }
-    }
+    if (sequence.length === 0) return;
+    await audioService.playSequence(sequence);
   };
 
   const durationLabels: Record<DurationType, string> = {
@@ -63,128 +98,182 @@ const CreateScaleScreen: React.FC = () => {
   };
 
   return (
-    <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-background-light dark:bg-background-dark shadow-2xl">
+    <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 bg-background-light dark:bg-background-dark z-20 shrink-0">
+      <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5">
         <button 
+          type="button"
           onClick={() => navigate('/scales')}
-          className="flex items-center justify-center size-10 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+          className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer"
+          aria-label="Cerrar"
         >
-          <span className="material-symbols-outlined text-[24px]">close</span>
+          <span className="material-symbols-outlined text-[36px] pointer-events-none">close</span>
         </button>
-        <h1 className="text-lg font-bold leading-tight tracking-tight">Nueva Escala</h1>
+        <h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1>
         <button 
+          type="button"
           onClick={handleSave}
-          className="text-primary font-bold text-base px-2 py-1 hover:bg-primary/10 rounded-lg transition-colors"
+          className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer"
         >
-          Guardar
+          {id ? 'Listo' : 'Guardar'}
         </button>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto no-scrollbar pb-[300px]">
-        <div className="px-5 py-2">
-          <label className="block">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Nombre</span>
-            <input 
-              value={scaleName}
-              onChange={(e) => setScaleName(e.target.value)}
-              className="w-full bg-white dark:bg-surface-dark border border-slate-200 dark:border-surface-border rounded-xl px-4 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all placeholder:text-slate-400 dark:placeholder:text-slate-600" 
-              placeholder="Ej. Escala Pentatónica en Do..." 
-              type="text"
-            />
-          </label>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto no-scrollbar pb-[340px] px-5 pt-6 relative z-10">
+        <div className="mb-6">
+          <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
+          <input 
+            value={scaleName}
+            onChange={(e) => setScaleName(e.target.value)}
+            className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
+            placeholder="Ej. Mi Escala..." 
+          />
         </div>
 
-        <div className="px-5 py-4">
-          <span className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-2 block">Duración de nota</span>
-          <div className="flex p-1 bg-slate-200 dark:bg-[#1c1f27] rounded-xl">
+        <div className="mb-8">
+          <span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span>
+          <div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">
             {(['whole', 'half', 'quarter', 'eighth'] as DurationType[]).map((dur) => (
-              <label key={dur} className="flex-1 cursor-pointer">
-                <input 
-                  className="peer sr-only" 
-                  name="duration" 
-                  type="radio" 
-                  checked={selectedDuration === dur}
-                  onChange={() => setSelectedDuration(dur)}
-                />
-                <div className="h-9 flex items-center justify-center rounded-lg text-xs font-medium text-slate-500 dark:text-slate-400 peer-checked:bg-white dark:peer-checked:bg-surface-border peer-checked:text-primary peer-checked:shadow-sm transition-all text-center">
-                  {durationLabels[dur]}
-                </div>
-              </label>
+              <button 
+                key={dur}
+                type="button"
+                onClick={() => setSelectedDuration(dur)}
+                className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}
+              >
+                {durationLabels[dur]}
+              </button>
             ))}
           </div>
         </div>
 
-        <div className="px-5 pb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">Secuencia</h3>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500 font-medium">{sequence.length} Notas</span>
-              <button onClick={clearAll} className="text-xs font-semibold text-red-500 hover:text-red-400">Borrar Todo</button>
-            </div>
+        {/* Sección de notas */}
+        <div className="mb-2 flex items-center justify-between relative z-[100]">
+          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
+          <div className="flex items-center gap-3">
+            <span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>
+            {sequence.length > 0 && (
+              <button 
+                type="button" 
+                onClick={requestClear} 
+                className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all"
+              >
+                Limpiar
+              </button>
+            )}
           </div>
+        </div>
 
-          <div className="h-40 bg-slate-100 dark:bg-[#1c1f27] border border-slate-200 dark:border-surface-border rounded-2xl relative overflow-hidden flex items-center px-4 shadow-inner">
-            <div className="absolute inset-0 flex flex-col justify-center gap-2 opacity-10 pointer-events-none px-4">
-              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-px w-full bg-slate-900 dark:bg-white"></div>)}
-            </div>
-
-            <div className="flex gap-4 overflow-x-auto no-scrollbar w-full py-4 z-10 items-center">
-              {sequence.length === 0 ? (
-                <div className="w-full flex items-center justify-center">
-                   <div className="flex size-12 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-400">
-                    <span className="material-symbols-outlined text-sm">add</span>
+        <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4">
+          <div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">
+            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}
+          </div>
+          <div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">
+            {sequence.length === 0 ? (
+              <div className="w-full text-center flex flex-col items-center gap-2 opacity-30">
+                <span className="material-symbols-outlined text-4xl">music_note</span>
+                <span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span>
+              </div>
+            ) : (
+              sequence.map((item, idx) => (
+                <div key={idx} className="flex flex-col items-center gap-3 shrink-0">
+                  <div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}>
+                    <span className="text-sm font-black text-white">{item.note}</span>
                   </div>
+                  <span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span>
                 </div>
-              ) : (
-                sequence.map((item, idx) => (
-                  <div key={idx} className="flex flex-col items-center gap-1 shrink-0 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                    <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/20 ring-2 ring-white dark:ring-[#101622]">
-                      <span className="text-sm font-black tracking-tighter">{item.note}</span>
-                    </div>
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{durationLabels[item.duration]}</span>
-                  </div>
-                ))
-              )}
-            </div>
+              ))
+            )}
           </div>
-          <p className="text-center text-xs text-slate-400 mt-3 font-medium">Toca el piano para agregar notas a la secuencia</p>
         </div>
       </main>
 
-      {/* Piano Section */}
-      <div className="absolute bottom-0 w-full bg-white dark:bg-[#151921] border-t border-slate-200 dark:border-surface-border shadow-[0_-4px_20px_rgba(0,0,0,0.4)] z-30 flex flex-col">
-        <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 dark:border-surface-border/50">
-          <button onClick={playSequence} className="flex items-center gap-2 text-primary hover:text-blue-400 transition-colors">
-            <span className="material-symbols-outlined fill-1 text-3xl">play_circle</span>
-            <span className="text-sm font-black uppercase tracking-wider">Escuchar</span>
+      {/* Piano Controls */}
+      <div className="absolute bottom-0 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
+        <div className="flex items-center justify-between px-6 py-4">
+          <button 
+            type="button"
+            onClick={playSequence} 
+            disabled={sequence.length === 0}
+            className={`flex items-center gap-3 active:scale-95 transition-all ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}
+          >
+            <span className="material-symbols-outlined fill-1 text-[40px] pointer-events-none">play_circle</span>
+            <span className="text-xs font-black uppercase tracking-[0.1em]">Escuchar</span>
           </button>
-          <div className="flex items-center gap-1">
-            <button onClick={undo} className="size-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5">
-              <span className="material-symbols-outlined text-[24px]">undo</span>
+          
+          <div className="flex items-center gap-4">
+            <button 
+              type="button"
+              onClick={undo} 
+              disabled={sequence.length === 0}
+              className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}
+            >
+              <span className="material-symbols-outlined text-[32px] pointer-events-none">undo</span>
             </button>
-            <button onClick={undo} className="size-10 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5">
-              <span className="material-symbols-outlined text-[24px]">backspace</span>
+            <button 
+              type="button"
+              onClick={undo}
+              disabled={sequence.length === 0}
+              className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}
+            >
+              <span className="material-symbols-outlined text-[32px] pointer-events-none">backspace</span>
             </button>
           </div>
         </div>
 
-        <div className="relative h-56 w-full select-none bg-slate-900 overflow-hidden">
-          <div className="flex h-full w-full">
-            {['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4'].map((note) => (
-              <div key={note} onClick={() => addNote(note)} className="relative flex-1 bg-white border-r border-slate-300 rounded-b-xl cursor-pointer active:bg-slate-200 group">
-                <span className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 pointer-events-none">{note}</span>
-              </div>
-            ))}
-          </div>
+        <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
+          {['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'].map((note) => (
+            <div 
+              key={note} 
+              onClick={() => addNote(note)} 
+              className="relative flex-1 bg-white border-r border-slate-300 rounded-b-2xl active:bg-slate-200 cursor-pointer shadow-inner"
+            >
+              <span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">{note}</span>
+            </div>
+          ))}
           {[
-            { note: 'C#4', left: '10%' }, { note: 'D#4', left: '24.5%' }, { note: 'F#4', left: '53%' }, { note: 'G#4', left: '67.5%' }, { note: 'A#4', left: '81.8%' }
+            { n: 'C#4', l: '8.5%' }, { n: 'D#4', l: '21%' }, { n: 'F#4', l: '46%' }, { n: 'G#4', l: '58.5%' }, { n: 'A#4', l: '71%' }
           ].map((bk) => (
-            <div key={bk.note} onClick={() => addNote(bk.note)} style={{ left: bk.left }} className="absolute top-0 w-[8.5%] h-[60%] bg-black border-x border-b border-slate-800 rounded-b-lg z-10 cursor-pointer shadow-xl active:bg-slate-800"></div>
+            <div 
+              key={bk.n} 
+              onClick={() => addNote(bk.n)} 
+              style={{ left: bk.l }} 
+              className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"
+            ></div>
           ))}
         </div>
       </div>
+
+      {/* Clear Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center gap-4">
+              <div className="size-16 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-1 border border-orange-500/20">
+                <span className="material-symbols-outlined text-3xl">cleaning_services</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold mb-2 text-white">¿Limpiar Notas?</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">¿Deseas borrar toda la secuencia de notas actual?</p>
+              </div>
+              <div className="flex gap-3 w-full mt-3">
+                <button 
+                  onClick={() => setShowClearModal(false)}
+                  className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmClear}
+                  className="flex-1 h-12 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all active:scale-95"
+                >
+                  Borrar Todo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

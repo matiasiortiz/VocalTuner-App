@@ -18,21 +18,31 @@ class PianoAudioService {
     this.initContext();
     if (!this.ctx) return;
 
+    const t = this.ctx.currentTime;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
-
+    
+    // Simular armónicos de piano usando wave shaping o combinando ondas
+    // Aquí usamos triangle que es suave pero con armónicos impares, filtrado
     osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+    osc.frequency.setValueAtTime(freq, t);
 
-    gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.5, this.ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+    // Envolvente ADSR para Piano
+    // Attack: Muy rápido (golpe del martillo)
+    // Decay: Rápido inicial
+    // Sustain: Cae lentamente
+    // Release: Rápido al soltar (aquí simulado por duración)
+    
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.6, t + 0.015); // Ataque un poco más suave para evitar click digital
+    gain.gain.exponentialRampToValueAtTime(0.4, t + 0.1); // Decay inicial
+    gain.gain.exponentialRampToValueAtTime(0.001, t + duration); // Release natural
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start();
-    osc.stop(this.ctx.currentTime + duration);
+    osc.stop(t + duration + 0.1);
   }
 
   public getNoteFrequency(noteName: string, octave: string): number {
@@ -51,7 +61,8 @@ class PianoAudioService {
         const duration = durMap[item.duration];
         this.playNote(freq, duration);
         if (onStep) onStep(i);
-        await new Promise(r => setTimeout(r, duration * 1000 + 50));
+        // Esperar la duración de la nota
+        await new Promise(r => setTimeout(r, duration * 1000));
       }
     }
   }
@@ -75,7 +86,7 @@ class PianoAudioService {
       const note = fullSequence[i];
       const freq = NOTE_FREQUENCIES[note];
       if (freq) {
-        this.playNote(freq, noteDuration * 0.9);
+        this.playNote(freq, noteDuration * 1.5); // Notas un poco más largas para legato
         if (onStep) onStep(i, fullSequence.length);
       }
       await new Promise(r => setTimeout(r, noteDuration * 1000));

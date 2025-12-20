@@ -16,11 +16,9 @@ const HomeScreen: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    // Cargar escalas guardadas
     const saved = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
     setUserScales(saved);
 
-    // Lógica de Modo Oscuro inicial
     const theme = localStorage.getItem('theme') || 'dark';
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -32,15 +30,10 @@ const HomeScreen: React.FC = () => {
   }, []);
 
   const toggleDarkMode = () => {
-    if (isDarkMode) {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-      setIsDarkMode(true);
-    }
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('theme', next ? 'dark' : 'light');
   };
 
   const standardScales: ScaleType[] = ["Mayor", "Menor", "Pentatónica Mayor", "Pentatónica Menor", "Cromática", "Blues", "Flamenca"];
@@ -48,16 +41,13 @@ const HomeScreen: React.FC = () => {
   const handleStart = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
-
     const customScale = userScales.find(s => s.id === selectedScaleId);
-    
     if (customScale) {
       await audioService.playSequence(customScale.notes);
     } else {
       const intervals = SCALE_INTERVALS[selectedScaleId as ScaleType];
       await audioService.playScale(selectedNote, selectedOctave, intervals, 110);
     }
-
     setIsPlaying(false);
   };
 
@@ -68,7 +58,6 @@ const HomeScreen: React.FC = () => {
 
   return (
     <div className="relative flex h-screen w-full flex-col bg-background-light dark:bg-[#0b0f17] text-slate-900 dark:text-white overflow-hidden max-w-md mx-auto transition-colors duration-300">
-      {/* Header */}
       <header className="flex items-center justify-between px-6 py-5 shrink-0">
         <h1 className="text-xl font-bold tracking-tight">Vocalización</h1>
         <button 
@@ -81,8 +70,8 @@ const HomeScreen: React.FC = () => {
         </button>
       </header>
 
-      <main className="flex-1 overflow-y-auto no-scrollbar px-6 pb-48 space-y-8">
-        {/* Selecciona una escala - GRID para ver todas */}
+      {/* pb-[320px] para dejar espacio al panel fijo inferior que ahora es más alto */}
+      <main className="flex-1 overflow-y-auto no-scrollbar px-6 pb-[340px] space-y-8">
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold">Selecciona una escala</h2>
@@ -105,7 +94,6 @@ const HomeScreen: React.FC = () => {
                 {scale}
               </button>
             ))}
-            {/* Escalas guardadas integradas en la cuadrícula */}
             {userScales.map(scale => (
               <button 
                 key={scale.id}
@@ -120,7 +108,6 @@ const HomeScreen: React.FC = () => {
           </div>
         </section>
 
-        {/* Elige la nota */}
         <section>
           <h2 className="text-lg font-bold mb-4">Elige la nota</h2>
           <div className="grid grid-cols-4 gap-3">
@@ -141,10 +128,9 @@ const HomeScreen: React.FC = () => {
           </div>
         </section>
 
-        {/* Octava del Piano */}
         <section>
           <h2 className="text-lg font-bold mb-4">Octava del Piano</h2>
-          <div className="bg-slate-200 dark:bg-[#1c2333] p-1.5 rounded-xl border border-slate-300 dark:border-gray-800 flex justify-between gap-1">
+          <div className="bg-slate-200 dark:bg-[#1c2333] p-2 rounded-2xl border border-slate-300 dark:border-gray-800 grid grid-cols-4 gap-2">
             {['C3', 'C4', 'C5', 'C6'].map(oct => (
               <button 
                 key={oct}
@@ -152,9 +138,9 @@ const HomeScreen: React.FC = () => {
                   setSelectedOctave(oct);
                   audioService.playNote(audioService.getNoteFrequency(selectedNote, oct), 0.3);
                 }}
-                className={`flex-1 h-11 rounded-lg text-xs font-bold transition-all ${selectedOctave === oct
-                  ? 'bg-white dark:bg-[#132d5e] text-primary shadow-sm'
-                  : 'text-slate-500 dark:text-gray-500 hover:bg-black/5 dark:hover:bg-white/5'}`}
+                className={`h-14 rounded-xl text-sm font-black transition-all flex items-center justify-center ${selectedOctave === oct
+                  ? 'bg-primary text-white shadow-glow scale-[1.02]'
+                  : 'bg-white dark:bg-white/5 text-slate-400 dark:text-gray-500 border border-transparent dark:hover:border-gray-700'}`}
               >
                 {oct}
               </button>
@@ -163,9 +149,9 @@ const HomeScreen: React.FC = () => {
         </section>
       </main>
 
-      {/* Floating Bottom Section (Status + Button) */}
-      <div className="absolute bottom-16 left-0 right-0 px-5 pt-4 pb-6 bg-gradient-to-t from-background-light dark:from-[#0b0f17] via-background-light dark:via-[#0b0f17] to-transparent z-40">
-        <div className="bg-white dark:bg-[#161c27] rounded-2xl p-4 border border-slate-200 dark:border-gray-800 mb-4 flex items-center justify-between shadow-sm">
+      {/* Panel Fijo Inferior - Reubicado debajo de la octava del piano en el orden visual */}
+      <div className="fixed bottom-16 left-0 right-0 px-5 pt-4 pb-6 bg-gradient-to-t from-background-light dark:from-[#0b0f17] via-background-light dark:via-[#0b0f17] to-transparent z-[60] max-w-md mx-auto">
+        <div className="bg-white dark:bg-[#161c27] rounded-2xl p-4 border border-slate-200 dark:border-gray-800 mb-4 flex items-center justify-between shadow-xl">
           <div>
             <p className="text-[10px] font-bold text-slate-400 dark:text-gray-500 uppercase tracking-widest mb-1">Configuración Actual</p>
             <h3 className="text-lg font-bold text-slate-800 dark:text-white">
@@ -180,7 +166,7 @@ const HomeScreen: React.FC = () => {
         <button 
           onClick={handleStart}
           disabled={isPlaying}
-          className={`w-full h-14 rounded-xl bg-primary hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-[0_4px_15px_rgba(19,91,236,0.3)] ${isPlaying ? 'opacity-70' : ''}`}
+          className={`w-full h-14 rounded-xl bg-primary hover:bg-blue-600 text-white font-bold flex items-center justify-center gap-3 transition-all active:scale-95 shadow-[0_8px_25px_rgba(19,91,236,0.4)] ${isPlaying ? 'opacity-70' : ''}`}
         >
           <span className="material-symbols-outlined fill-1">{isPlaying ? 'graphic_eq' : 'play_arrow'}</span>
           <span className="text-base tracking-wide uppercase">{isPlaying ? 'Tocando...' : 'Comenzar'}</span>

@@ -17,6 +17,7 @@ const App: React.FC = () => {
           <Route path="/health" element={<HealthScreen />} />
           <Route path="/scales" element={<ScalesScreen />} />
           <Route path="/create-scale" element={<CreateScaleScreen />} />
+          <Route path="/edit-scale/:id" element={<CreateScaleScreen />} />
         </Routes>
       </div>
     </Router>
