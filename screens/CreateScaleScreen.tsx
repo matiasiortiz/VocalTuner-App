@@ -1,9 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { NOTE_FREQUENCIES } from '../constants';
 import { audioService } from '../services/audioService';
-import { DurationType, SequenceNote, ScaleItem } from '../types';
+import { DurationType, SequenceNote } from '../types';
 
 const CreateScaleScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -12,6 +11,9 @@ const CreateScaleScreen: React.FC = () => {
   const [selectedDuration, setSelectedDuration] = useState<DurationType>('quarter');
   const [sequence, setSequence] = useState<SequenceNote[]>([]);
   const [showClearModal, setShowClearModal] = useState(false);
+  
+  // Estado para controlar la octava actual del piano (3, 4, o 5)
+  const [currentOctave, setCurrentOctave] = useState<number>(4);
 
   useEffect(() => {
     if (id) {
@@ -34,8 +36,8 @@ const CreateScaleScreen: React.FC = () => {
   const addNote = (note: string) => {
     const newItem: SequenceNote = { note, duration: selectedDuration };
     setSequence([...sequence, newItem]);
-    const freq = NOTE_FREQUENCIES[note];
-    if (freq) audioService.playNote(freq, 0.4);
+    // Reproducir usando nombre de nota para sample real
+    audioService.playNote(note, 0.4);
   };
 
   const undo = () => {
@@ -97,6 +99,21 @@ const CreateScaleScreen: React.FC = () => {
     eighth: 'Corchea'
   };
 
+  // Generación dinámica de teclas basada en la octava actual
+  const baseNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+  const whiteKeys = [
+    ...baseNotes.map(n => `${n}${currentOctave}`),
+    `C${currentOctave + 1}` // Incluir el Do de la siguiente octava
+  ];
+
+  const blackKeysConfig = [
+    { noteBase: 'C#', left: '8.5%' },
+    { noteBase: 'D#', left: '21%' },
+    { noteBase: 'F#', left: '46%' },
+    { noteBase: 'G#', left: '58.5%' },
+    { noteBase: 'A#', left: '71%' }
+  ];
+
   return (
     <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
       {/* Header */}
@@ -115,8 +132,7 @@ const CreateScaleScreen: React.FC = () => {
           onClick={handleSave}
           className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer"
         >
-          {id ? 'Listo' : 'Guardar'}
-        </button>
+          {id ? 'Listo' : 'Guardar'}</button>
       </header>
 
       {/* Main Content */}
@@ -190,25 +206,43 @@ const CreateScaleScreen: React.FC = () => {
 
       {/* Piano Controls */}
       <div className="absolute bottom-0 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
-        <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center justify-between px-4 py-4 gap-2">
+          {/* Botón de reproducción */}
           <button 
             type="button"
             onClick={playSequence} 
             disabled={sequence.length === 0}
-            className={`flex items-center gap-3 active:scale-95 transition-all ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}
+            className={`flex items-center gap-2 active:scale-95 transition-all shrink-0 ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}
           >
-            <span className="material-symbols-outlined fill-1 text-[40px] pointer-events-none">play_circle</span>
-            <span className="text-xs font-black uppercase tracking-[0.1em]">Escuchar</span>
+            <span className="material-symbols-outlined fill-1 text-[36px] pointer-events-none">play_circle</span>
           </button>
+
+          {/* Selector de Octavas (Central) */}
+          <div className="flex items-center justify-center gap-1 bg-[#0b0f17] p-1 rounded-xl border border-white/5">
+            {[3, 4, 5].map(oct => (
+              <button
+                key={oct}
+                onClick={() => setCurrentOctave(oct)}
+                className={`h-8 w-10 rounded-lg text-[10px] font-black transition-all ${
+                  currentOctave === oct 
+                    ? 'bg-primary text-white shadow-lg' 
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                C{oct}
+              </button>
+            ))}
+          </div>
           
-          <div className="flex items-center gap-4">
+          {/* Botones de acción (Deshacer) */}
+          <div className="flex items-center gap-3 shrink-0">
             <button 
               type="button"
               onClick={undo} 
               disabled={sequence.length === 0}
               className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}
             >
-              <span className="material-symbols-outlined text-[32px] pointer-events-none">undo</span>
+              <span className="material-symbols-outlined text-[28px] pointer-events-none">undo</span>
             </button>
             <button 
               type="button"
@@ -216,13 +250,14 @@ const CreateScaleScreen: React.FC = () => {
               disabled={sequence.length === 0}
               className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}
             >
-              <span className="material-symbols-outlined text-[32px] pointer-events-none">backspace</span>
+              <span className="material-symbols-outlined text-[28px] pointer-events-none">backspace</span>
             </button>
           </div>
         </div>
 
+        {/* Teclado de Piano Dinámico */}
         <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
-          {['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'].map((note) => (
+          {whiteKeys.map((note) => (
             <div 
               key={note} 
               onClick={() => addNote(note)} 
@@ -231,16 +266,17 @@ const CreateScaleScreen: React.FC = () => {
               <span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">{note}</span>
             </div>
           ))}
-          {[
-            { n: 'C#4', l: '8.5%' }, { n: 'D#4', l: '21%' }, { n: 'F#4', l: '46%' }, { n: 'G#4', l: '58.5%' }, { n: 'A#4', l: '71%' }
-          ].map((bk) => (
-            <div 
-              key={bk.n} 
-              onClick={() => addNote(bk.n)} 
-              style={{ left: bk.l }} 
-              className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"
-            ></div>
-          ))}
+          {blackKeysConfig.map((bk) => {
+            const noteName = `${bk.noteBase}${currentOctave}`;
+            return (
+              <div 
+                key={noteName} 
+                onClick={() => addNote(noteName)} 
+                style={{ left: bk.left }} 
+                className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"
+              ></div>
+            );
+          })}
         </div>
       </div>
 

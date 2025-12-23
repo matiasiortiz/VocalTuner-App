@@ -56,6 +56,8 @@ const HomeScreen: React.FC = () => {
     return custom ? custom.name : `${selectedNote} ${selectedScaleId}`;
   };
 
+  const getOctaveNumber = (octaveStr: string) => octaveStr.replace('C', '');
+
   return (
     <div className="relative flex h-screen w-full flex-col bg-background-light dark:bg-[#0b0f17] text-slate-900 dark:text-white overflow-hidden max-w-md mx-auto transition-colors duration-300">
       <header className="flex items-center justify-between px-6 py-5 shrink-0">
@@ -116,7 +118,8 @@ const HomeScreen: React.FC = () => {
                 key={note}
                 onClick={() => {
                   setSelectedNote(note);
-                  audioService.playNote(audioService.getNoteFrequency(note, selectedOctave), 0.3);
+                  // Usar samples reales: pasar nombre completo ej "C4"
+                  audioService.playNote(`${note}${getOctaveNumber(selectedOctave)}`, 0.3);
                 }}
                 className={`h-14 rounded-xl text-base font-bold transition-all flex items-center justify-center border-2 ${selectedNote === note 
                   ? 'bg-primary border-primary text-white shadow-glow' 
@@ -136,7 +139,8 @@ const HomeScreen: React.FC = () => {
                 key={oct}
                 onClick={() => {
                   setSelectedOctave(oct);
-                  audioService.playNote(audioService.getNoteFrequency(selectedNote, oct), 0.3);
+                  // Usar samples reales
+                  audioService.playNote(`${selectedNote}${getOctaveNumber(oct)}`, 0.3);
                 }}
                 className={`h-14 rounded-xl text-sm font-black transition-all flex items-center justify-center ${selectedOctave === oct
                   ? 'bg-primary text-white shadow-glow scale-[1.02]'
@@ -149,7 +153,7 @@ const HomeScreen: React.FC = () => {
         </section>
       </main>
 
-      {/* Panel Fijo Inferior - Reubicado debajo de la octava del piano en el orden visual */}
+      {/* Panel Fijo Inferior */}
       <div className="fixed bottom-16 left-0 right-0 px-5 pt-4 pb-6 bg-gradient-to-t from-background-light dark:from-[#0b0f17] via-background-light dark:via-[#0b0f17] to-transparent z-[60] max-w-md mx-auto">
         <div className="bg-white dark:bg-[#161c27] rounded-2xl p-4 border border-slate-200 dark:border-gray-800 mb-4 flex items-center justify-between shadow-xl">
           <div>
