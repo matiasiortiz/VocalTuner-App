@@ -84,7 +84,8 @@
           'Arpegio Mayor': [0, 4, 7, 12],
           'Arpegio Menor': [0, 3, 7, 12],
           'Arpegio Disminuido': [0, 3, 6, 9, 12],
-          'Rossini': [0, 2, 4, 5, 7, 9, 11, 12, 14], // Escala mayor hasta la 9na
+          'Rossini': [0, 4, 7, 12, 16, 19, 17, 14, 11, 7, 5, 2, 0], // Corregido: 13 notas secuenciales
+          'Rossini Arpeggio': [0, 4, 7, 11, 12], 
           'Pentatónica Mayor': [0, 2, 4, 7, 9, 12],
           'Pentatónica Menor': [0, 3, 5, 7, 10, 12],
           'Blues': [0, 3, 5, 6, 7, 10, 12],
@@ -103,10 +104,10 @@
                 this.ctx = null;
                 this.buffers = {};
                 this.activeSources = [];
-                this.isStopped = false;
+                // ID único de reproducción para evitar superposiciones
+                this.currentPlaybackId = 0; 
                 this.noteMap = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" };
                 
-                // Unlock audio context on interaction
                 const unlockHandler = () => {
                     this.initContext();
                     if (this.ctx && this.ctx.state !== 'running') {
@@ -125,7 +126,8 @@
             }
 
             stop() {
-                this.isStopped = true;
+                // Invalidar ejecuciones anteriores
+                this.currentPlaybackId++; 
                 this.activeSources.forEach(source => {
                     try { source.stop(); source.disconnect(); } catch (e) {}
                 });
@@ -169,12 +171,16 @@
                 source.buffer = buffer;
                 source.connect(gain);
                 gain.connect(this.ctx.destination);
+                
+                // Envolvente mejorada para sustain natural
                 gain.gain.setValueAtTime(0, startTime);
                 gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
-                gain.gain.setValueAtTime(volume, startTime + duration - 0.05); 
-                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration + 0.5);
+                gain.gain.setValueAtTime(volume * 0.8, startTime + duration); // Sustain
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration + 1.5); // Release largo
+
                 source.start(startTime);
-                source.stop(startTime + duration + 0.6);
+                source.stop(startTime + duration + 2.0); // Permitir cola de sonido
+                
                 this.activeSources.push(source);
                 source.onended = () => { this.activeSources = this.activeSources.filter(s => s !== source); };
             }
@@ -236,9 +242,9 @@
                 }
             }
 
-            async playChord(rootNoteAbsIndex, scaleId, duration) {
-                if (this.isStopped) return;
-                let intervals = [0, 4, 7]; // Default Mayor
+            async playChord(rootNoteAbsIndex, scaleId, duration, runId) {
+                if (this.currentPlaybackId !== runId) return;
+                let intervals = [0, 4, 7];
                 const lowerId = scaleId.toLowerCase();
                 if (lowerId.includes('menor') || lowerId.includes('dórica') || lowerId.includes('blues')) { intervals = [0, 3, 7]; } 
                 else if (lowerId.includes('disminuido')) { intervals = [0, 3, 6]; }
@@ -255,20 +261,26 @@
                 notesToPlay.forEach(noteName => {
                     const fileName = this.mapNoteToFileName(noteName);
                     const buffer = this.buffers[fileName];
-                    if (buffer) { this.playBufferAt(buffer, startTime, duration, 1.8); } 
+                    if (buffer) { 
+                        // Usamos duración para sustain, pero el audio sigue sonando (release)
+                        this.playBufferAt(buffer, startTime, duration, 1.8); 
+                    } 
                     else { const freq = NOTE_FREQUENCIES[noteName] || 440; this.playSynthToneAt(freq, startTime, duration); }
                 });
             }
 
             async playSequence(sequence, onStep) {
+                this.stop(); // Stop previous
                 this.initContext();
-                this.isStopped = false;
                 if (!this.ctx) return;
+                
+                const runId = ++this.currentPlaybackId;
+
                 const noteNames = sequence.map(s => s.note);
                 await this.preloadNotes(noteNames);
                 const durMap = { 'whole': 1.6, 'half': 0.8, 'quarter': 0.4, 'eighth': 0.2 };
                 for (let i = 0; i < sequence.length; i++) {
-                    if (this.isStopped) break;
+                    if (this.currentPlaybackId !== runId) break;
                     const item = sequence[i];
                     const duration = durMap[item.duration];
                     const fileName = this.mapNoteToFileName(item.note);
@@ -281,62 +293,76 @@
             }
 
             async playScale(rootNote, startOctave, endOctave, intervals, bpm = 100, useMetronome = false, scaleId = 'Mayor', onStep) {
+                this.stop(); // Detener anterior
                 this.initContext();
-                this.isStopped = false;
                 if (!this.ctx) return;
 
-                const noteDuration = 60 / bpm;
+                const runId = ++this.currentPlaybackId;
+
+                const beatDuration = 60 / bpm; 
                 const rootIndex = NOTES.indexOf(rootNote);
+                
                 const startAbsolute = (startOctave * 12) + rootIndex;
                 const endAbsolute = (endOctave * 12) + rootIndex;
                 const actualStart = Math.min(startAbsolute, endAbsolute);
                 const actualEnd = Math.max(startAbsolute, endAbsolute);
 
-                // Preload approximation
                 const preloadList = [];
-                for (let i = actualStart; i <= actualEnd + 14; i++) { preloadList.push(`${NOTES[i%12]}${Math.floor(i/12)}`); }
+                for (let i = actualStart; i <= actualEnd + 24; i++) { preloadList.push(`${NOTES[i%12]}${Math.floor(i/12)}`); }
                 await this.preloadNotes(preloadList);
 
                 let currentRootAbs = actualStart;
+                const PAUSE_DURATION = 1.0; // Pausa fija de 1 segundo
 
-                while (currentRootAbs <= actualEnd && !this.isStopped) {
-                    // 1. Scale
-                    const scaleNotes = [];
-                    intervals.forEach(interval => {
-                        const noteAbs = currentRootAbs + interval;
-                        scaleNotes.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
-                    });
-                    const scaleSequence = [...scaleNotes, ...[...scaleNotes].reverse().slice(1)];
+                while (currentRootAbs <= actualEnd) {
+                    if (this.currentPlaybackId !== runId) return;
                     
-                    for (let i = 0; i < scaleSequence.length; i++) {
-                        if (this.isStopped) return;
-                        const noteName = scaleSequence[i];
-                        const startTime = this.ctx.currentTime;
-                        const duration = noteDuration * 1.5; 
-                        if (useMetronome) this.playClickAt(startTime);
-                        const fileName = this.mapNoteToFileName(noteName);
-                        if (this.buffers[fileName]) { this.playBufferAt(this.buffers[fileName], startTime, duration); } 
-                        else { const freq = NOTE_FREQUENCIES[noteName] || 440; this.playSynthToneAt(freq, startTime, duration); }
-                        if (onStep) onStep(i, scaleSequence.length);
-                        await this.wait(noteDuration);
+                    let scaleSequence = [];
+                    let noteDur = beatDuration * 0.5;
+
+                    if (scaleId === 'Rossini') {
+                        noteDur = beatDuration * 0.25; 
+                        intervals.forEach(interval => {
+                            const noteAbs = currentRootAbs + interval;
+                            scaleSequence.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
+                        });
+                    } else {
+                        const scaleNotes = [];
+                        intervals.forEach(interval => {
+                            const noteAbs = currentRootAbs + interval;
+                            scaleNotes.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
+                        });
+                        scaleSequence = [...scaleNotes, ...[...scaleNotes].reverse().slice(1)];
                     }
 
-                    if (this.isStopped) return;
+                    for (let i = 0; i < scaleSequence.length; i++) {
+                        if (this.currentPlaybackId !== runId) return;
+                        const noteName = scaleSequence[i];
+                        const startTime = this.ctx.currentTime;
+                        if (useMetronome && i % 4 === 0) this.playClickAt(startTime);
+                        const fileName = this.mapNoteToFileName(noteName);
+                        if (this.buffers[fileName]) { this.playBufferAt(this.buffers[fileName], startTime, noteDur); } 
+                        else { const freq = NOTE_FREQUENCIES[noteName] || 440; this.playSynthToneAt(freq, startTime, noteDur); }
+                        if (onStep) onStep(i, scaleSequence.length);
+                        await this.wait(noteDur);
+                    }
 
-                    // 2. Chord Current
-                    const chordDuration = noteDuration * 2; 
-                    if (useMetronome) { this.playClickAt(this.ctx.currentTime); this.playClickAt(this.ctx.currentTime + noteDuration); }
-                    await this.playChord(currentRootAbs, scaleId, chordDuration);
-                    await this.wait(chordDuration);
+                    if (this.currentPlaybackId !== runId) return;
 
-                    if (this.isStopped) return;
+                    await this.wait(PAUSE_DURATION); // Pausa 1s
 
-                    // 3. Chord Next (Modulation preparation)
+                    if (useMetronome) this.playClickAt(this.ctx.currentTime);
+                    await this.playChord(currentRootAbs, scaleId, 1.5, runId);
+                    
+                    await this.wait(PAUSE_DURATION); // Pausa 1s
+
+                    if (this.currentPlaybackId !== runId) return;
+
                     if (currentRootAbs < actualEnd) {
-                        const nextRootAbs = currentRootAbs + 1;
-                        if (useMetronome) { this.playClickAt(this.ctx.currentTime); this.playClickAt(this.ctx.currentTime + noteDuration); }
-                        await this.playChord(nextRootAbs, scaleId, chordDuration);
-                        await this.wait(chordDuration);
+                         const nextRootAbs = currentRootAbs + 1;
+                         if (useMetronome) this.playClickAt(this.ctx.currentTime);
+                         await this.playChord(nextRootAbs, scaleId, 1.5, runId);
+                         await this.wait(PAUSE_DURATION); // Pausa 1s
                     }
                     currentRootAbs++;
                 }
@@ -377,6 +403,8 @@
           const [isPlaying, setIsPlaying] = useState(false);
           const [isDarkMode, setIsDarkMode] = useState(true);
 
+          const isProcessingRef = useRef(false);
+
           useEffect(() => {
             const theme = localStorage.getItem('theme') || 'dark';
             if (theme === 'dark') { document.documentElement.classList.add('dark'); setIsDarkMode(true); } 
@@ -391,15 +419,42 @@
           };
 
           const handleStart = async () => {
+            // 1. LÓGICA DE DETENER (Prioridad)
             if (isPlaying) {
               audioService.stop();
               setIsPlaying(false);
-              return;
+              return; // Detención inmediata, ignorando bloqueo de inicio
             }
-            setIsPlaying(true);
-            const intervals = SCALE_INTERVALS[selectedScaleId] || SCALE_INTERVALS['Mayor'];
-            await audioService.playScale(selectedNote, startOctave, endOctave, intervals, bpm, isMetronomeOn, selectedScaleId);
-            setIsPlaying(false);
+
+            // 2. LÓGICA DE INICIAR (Con bloqueo de doble click)
+            if (isProcessingRef.current) return;
+            isProcessingRef.current = true;
+
+            try {
+              setIsPlaying(true);
+              
+              await new Promise(resolve => setTimeout(resolve, 50));
+              
+              const intervals = SCALE_INTERVALS[selectedScaleId] || SCALE_INTERVALS['Mayor'];
+              
+              await audioService.playScale(
+                selectedNote, 
+                startOctave, 
+                endOctave, 
+                intervals, 
+                bpm, 
+                isMetronomeOn,
+                selectedScaleId
+              );
+              
+              setIsPlaying(false);
+
+            } catch (error) {
+              console.error("Error en reproducción:", error);
+              setIsPlaying(false);
+            } finally {
+              isProcessingRef.current = false;
+            }
           };
 
           const ScaleButton = ({ label }) => (
@@ -424,7 +479,7 @@
                     <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Escalas Básicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Mayor" /><ScaleButton label="Menor Natural" /><ScaleButton label="Cromática" /></div></div>
                     <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Modales y Variaciones</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Dórica" /><ScaleButton label="Dórica Menor" /><ScaleButton label="Aumentada" /></div></div>
                     <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Arpegios</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Arpegio Mayor" /><ScaleButton label="Arpegio Menor" /><ScaleButton label="Arpegio Disminuido" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Rossini" /><ScaleButton label="Pentatónica Mayor" /><ScaleButton label="Pentatónica Menor" /><ScaleButton label="Blues" /><ScaleButton label="Flamenca" /></div></div>
+                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Rossini" /><ScaleButton label="Rossini Arpeggio" /><ScaleButton label="Pentatónica Mayor" /><ScaleButton label="Pentatónica Menor" /><ScaleButton label="Blues" /><ScaleButton label="Flamenca" /></div></div>
                   </div>
                 </div>
 
@@ -497,11 +552,13 @@
                 </div>
               </div>
 
-              <div className="fixed bottom-[4.5rem] left-0 right-0 p-4 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 z-50">
-                <button onClick={handleStart} className={`w-full h-14 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg transition-all active:scale-[0.98] ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30' : 'bg-primary hover:bg-blue-600 text-white shadow-primary/30'}`}>
-                  <span className={`material-symbols-outlined ${isPlaying ? '' : 'filled'}`}>{isPlaying ? 'stop' : 'play_arrow'}</span>
-                  <span>{isPlaying ? 'Detener' : 'Comenzar'}</span>
-                </button>
+              <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+                <div className="pointer-events-auto shadow-2xl rounded-full">
+                  <button onClick={handleStart} className={`min-w-[200px] px-8 h-14 rounded-full font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.95] hover:scale-105 border-2 ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-primary hover:bg-blue-600 text-white border-blue-400 shadow-[0_0_20px_rgba(19,91,236,0.4)]'}`}>
+                    <span className={`material-symbols-outlined text-3xl ${isPlaying ? '' : 'filled'}`}>{isPlaying ? 'stop' : 'play_arrow'}</span>
+                    <span className="tracking-wide">{isPlaying ? 'Detener' : 'Comenzar'}</span>
+                  </button>
+                </div>
               </div>
 
               <BottomNav activeTab="home" />
@@ -781,7 +838,6 @@
                   </div>
                 </div>
               )}
-              <BottomNav activeTab="scales" />
             </div>
           );
         };

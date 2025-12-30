@@ -6,7 +6,10 @@ class PianoAudioService {
   private ctx: AudioContext | null = null;
   private buffers: Record<string, AudioBuffer> = {};
   private activeSources: (AudioBufferSourceNode | OscillatorNode)[] = [];
-  private isStopped: boolean = false;
+  
+  // Solución al problema de superposición
+  private currentPlaybackId: number = 0; 
+
   private noteMap: Record<string, string> = {
     "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb"
   };
@@ -21,15 +24,14 @@ class PianoAudioService {
   }
 
   public stop() {
-    this.isStopped = true;
+    this.currentPlaybackId++; 
     
-    // Detener todas las fuentes de audio activas inmediatamente
     this.activeSources.forEach(source => {
       try {
         source.stop();
         source.disconnect();
       } catch (e) {
-        // Ignorar errores si ya se detuvo
+        // Ignorar errores
       }
     });
     this.activeSources = [];
@@ -81,16 +83,22 @@ class PianoAudioService {
     source.connect(gain);
     gain.connect(this.ctx.destination);
     
-    // Envelope para evitar clicks
+    // Configuración de envolvente para sonido natural
+    // Attack rápido
     gain.gain.setValueAtTime(0, startTime);
     gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
-    gain.gain.setValueAtTime(volume, startTime + duration - 0.05); 
-    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration + 0.5);
+    
+    // Sustain largo: Mantenemos el volumen alto casi hasta el final de la duración lógica
+    gain.gain.setValueAtTime(volume * 0.8, startTime + duration); 
+    
+    // Release natural: Permitimos una cola larga (1.5s) después de que la nota "termina" rítmicamente
+    // Esto evita el sonido "cortado"
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration + 1.5);
 
     source.start(startTime);
-    source.stop(startTime + duration + 0.6);
+    // Detenemos la fuente mucho después para permitir que el 'release' termine suavemente
+    source.stop(startTime + duration + 2.0);
     
-    // Rastrear fuente para poder detenerla
     this.activeSources.push(source);
     source.onended = () => {
       this.activeSources = this.activeSources.filter(s => s !== source);
@@ -143,7 +151,6 @@ class PianoAudioService {
     osc.stop(startTime + 0.05);
   }
 
-  // Utilidad para esperar tiempo en funciones async
   private wait(seconds: number): Promise<void> {
     return new Promise(resolve => {
         setTimeout(resolve, seconds * 1000);
@@ -185,14 +192,8 @@ class PianoAudioService {
     return NOTE_FREQUENCIES[fullNote] || 440;
   }
 
-  // Reproduce un acorde simultáneo
-  private async playChord(rootNoteAbsIndex: number, scaleId: string, duration: number) {
-    if (this.isStopped) return;
-    
-    // Determinar tipo de acorde basado en la escala
-    // Mayor/Pentatónica Mayor/Aumentada -> Tríada Mayor (0, 4, 7)
-    // Menor/Pentatónica Menor/Dórica -> Tríada Menor (0, 3, 7)
-    // Disminuido -> Disminuido (0, 3, 6)
+  private async playChord(rootNoteAbsIndex: number, scaleId: string, duration: number, runId: number) {
+    if (this.currentPlaybackId !== runId) return;
     
     let intervals = [0, 4, 7]; // Default Mayor
     
@@ -217,7 +218,7 @@ class PianoAudioService {
         const fileName = this.mapNoteToFileName(noteName);
         const buffer = this.buffers[fileName];
         if (buffer) {
-            // Volumen un poco más bajo para acordes para que no saturen
+            // Usamos duration para el sustain, pero el sonido durará más gracias a playBufferAt
             this.playBufferAt(buffer, startTime, duration, 1.8);
         } else {
             const freq = this.getNoteFrequencyFromFullString(noteName);
@@ -227,46 +228,34 @@ class PianoAudioService {
   }
 
   public async playSequence(sequence: SequenceNote[], onStep?: (index: number) => void) {
+    this.stop(); 
     this.initContext();
-    this.isStopped = false;
     if (!this.ctx) return;
+    
+    const runId = ++this.currentPlaybackId;
 
     const noteNames = sequence.map(s => s.note);
     await this.preloadNotes(noteNames);
-
     const durMap: Record<DurationType, number> = { 'whole': 1.6, 'half': 0.8, 'quarter': 0.4, 'eighth': 0.2 };
     
-    // Reproducción secuencial con awaits para permitir stop
     for (let i = 0; i < sequence.length; i++) {
-        if (this.isStopped) break;
+        if (this.currentPlaybackId !== runId) break;
         
         const item = sequence[i];
         const duration = durMap[item.duration];
         const fileName = this.mapNoteToFileName(item.note);
-        
         const startTime = this.ctx.currentTime;
-        
         if (this.buffers[fileName]) {
             this.playBufferAt(this.buffers[fileName], startTime, duration);
         } else {
             const freq = this.getNoteFrequencyFromFullString(item.note);
             this.playSynthToneAt(freq, startTime, duration);
         }
-
         if (onStep) onStep(i);
-        
-        // Esperar la duración de la nota antes de pasar a la siguiente
         await this.wait(duration);
     }
   }
 
-  /**
-   * Rutina de Vocalización Avanzada:
-   * 1. Toca escala (Arriba/Abajo)
-   * 2. Toca Acorde de la tonalidad actual
-   * 3. Toca Acorde de la tonalidad SIGUIENTE (aviso de modulación)
-   * 4. Sube medio tono y repite
-   */
   public async playScale(
       rootNote: string, 
       startOctave: number, 
@@ -274,95 +263,108 @@ class PianoAudioService {
       intervals: number[], 
       bpm: number = 100, 
       useMetronome: boolean = false,
-      scaleId: string = 'Mayor', // Necesario para determinar el tipo de acorde
+      scaleId: string = 'Mayor',
       onStep?: (index: number, total: number) => void
   ) {
+    this.stop(); 
     this.initContext();
-    this.isStopped = false;
     if (!this.ctx) return;
 
-    const noteDuration = 60 / bpm;
+    const runId = ++this.currentPlaybackId;
+
+    const beatDuration = 60 / bpm; 
     const rootIndex = NOTES.indexOf(rootNote);
     
-    // Definir rangos
     const startAbsolute = (startOctave * 12) + rootIndex;
     const endAbsolute = (endOctave * 12) + rootIndex;
     const actualStart = Math.min(startAbsolute, endAbsolute);
     const actualEnd = Math.max(startAbsolute, endAbsolute);
 
-    // Precargar todas las posibles notas (aproximación para no bloquear el inicio)
-    // Cargamos una octava cromática base en la octava inicial y final
     const preloadList: string[] = [];
-    for (let i = actualStart; i <= actualEnd + 14; i++) { // +14 para cubrir rango de escalas superiores
+    for (let i = actualStart; i <= actualEnd + 24; i++) { 
        preloadList.push(`${NOTES[i%12]}${Math.floor(i/12)}`);
     }
     await this.preloadNotes(preloadList);
 
-    // Bucle principal de modulación
     let currentRootAbs = actualStart;
 
-    while (currentRootAbs <= actualEnd && !this.isStopped) {
+    // Pausa fija solicitada por el usuario entre acordes
+    const PAUSE_DURATION = 1.0; 
+
+    while (currentRootAbs <= actualEnd) {
+        if (this.currentPlaybackId !== runId) return;
         
-        // 1. CONSTRUIR ESCALA
-        const scaleNotes: string[] = [];
-        intervals.forEach(interval => {
-            const noteAbs = currentRootAbs + interval;
-            scaleNotes.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
-        });
-        const scaleSequence = [...scaleNotes, ...[...scaleNotes].reverse().slice(1)];
-        
-        // 2. REPRODUCIR ESCALA
+        let scaleSequence: string[] = [];
+        let noteDur = beatDuration * 0.5;
+
+        // Construcción de la secuencia de notas
+        if (scaleId === 'Rossini') {
+            // Rossini usa el patrón definido en constants EXACTAMENTE como está
+            // Semicorcheas (aprox 1/4 de tiempo)
+            noteDur = beatDuration * 0.25; 
+            intervals.forEach(interval => {
+                const noteAbs = currentRootAbs + interval;
+                scaleSequence.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
+            });
+        } else {
+            // Escalas normales: Subir y bajar
+            const scaleNotes: string[] = [];
+            intervals.forEach(interval => {
+                const noteAbs = currentRootAbs + interval;
+                scaleNotes.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
+            });
+            scaleSequence = [...scaleNotes, ...[...scaleNotes].reverse().slice(1)];
+        }
+
+        // Reproducción de la escala
         for (let i = 0; i < scaleSequence.length; i++) {
-            if (this.isStopped) return;
-            
+            if (this.currentPlaybackId !== runId) return;
+
             const noteName = scaleSequence[i];
             const startTime = this.ctx.currentTime;
-            const duration = noteDuration * 1.5; // Legato feel
+            
+            if (useMetronome && i % 4 === 0) this.playClickAt(startTime);
 
-            // Metrónomo
-            if (useMetronome) this.playClickAt(startTime);
-
-            // Nota
             const fileName = this.mapNoteToFileName(noteName);
+            // Tocamos la nota, el sustain natural se maneja en playBufferAt
             if (this.buffers[fileName]) {
-                this.playBufferAt(this.buffers[fileName], startTime, duration);
+                this.playBufferAt(this.buffers[fileName], startTime, noteDur); 
             } else {
                 const freq = this.getNoteFrequencyFromFullString(noteName);
-                this.playSynthToneAt(freq, startTime, duration);
+                this.playSynthToneAt(freq, startTime, noteDur);
             }
 
-            if (onStep) onStep(i, scaleSequence.length); // Esto es solo un feedback visual aproximado
-            
-            // Esperar al siguiente beat
-            await this.wait(noteDuration);
+            if (onStep) onStep(i, scaleSequence.length);
+            await this.wait(noteDur);
         }
 
-        if (this.isStopped) return;
+        if (this.currentPlaybackId !== runId) return;
 
-        // 3. REPRODUCIR ACORDE ACTUAL (Cierre)
-        // Duración de acorde: una blanca (2 tiempos) o redonda
-        const chordDuration = noteDuration * 2; 
-        if (useMetronome) {
-             this.playClickAt(this.ctx.currentTime);
-             this.playClickAt(this.ctx.currentTime + noteDuration);
-        }
-        await this.playChord(currentRootAbs, scaleId, chordDuration);
-        await this.wait(chordDuration);
+        // 1. Pausa de 1 segundo después de la escala antes del acorde
+        await this.wait(PAUSE_DURATION);
 
-        if (this.isStopped) return;
+        // 2. Acorde Raíz (Resolución)
+        // Disparamos el sonido
+        if (useMetronome) this.playClickAt(this.ctx.currentTime);
+        await this.playChord(currentRootAbs, scaleId, 1.5, runId);
+        
+        // Esperamos 1 segundo OBLIGADO para el cambio
+        await this.wait(PAUSE_DURATION); 
 
-        // 4. REPRODUCIR ACORDE SIGUIENTE (Preparación) si no es el último
+        if (this.currentPlaybackId !== runId) return;
+
+        // 3. Modulación (Siguiente tono)
         if (currentRootAbs < actualEnd) {
-             const nextRootAbs = currentRootAbs + 1; // Siguiente semitono
-             if (useMetronome) {
-                this.playClickAt(this.ctx.currentTime);
-                this.playClickAt(this.ctx.currentTime + noteDuration);
-             }
-             await this.playChord(nextRootAbs, scaleId, chordDuration);
-             await this.wait(chordDuration);
+             const nextRootAbs = currentRootAbs + 1;
+             
+             // Disparamos el acorde de modulación
+             if (useMetronome) this.playClickAt(this.ctx.currentTime);
+             await this.playChord(nextRootAbs, scaleId, 1.5, runId);
+             
+             // Esperamos 1 segundo OBLIGADO antes de la siguiente escala
+             await this.wait(PAUSE_DURATION);
         }
 
-        // Avanzar medio tono
         currentRootAbs++;
     }
   }

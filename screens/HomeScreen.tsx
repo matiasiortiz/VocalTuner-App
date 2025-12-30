@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NOTES, SCALE_INTERVALS } from '../constants';
 import { audioService } from '../services/audioService';
@@ -17,6 +17,9 @@ const HomeScreen: React.FC = () => {
   const [isMetronomeOn, setIsMetronomeOn] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+
+  // Referencia para evitar dobles clicks al INICIAR, pero no debe bloquear el DETENER
+  const isProcessingRef = useRef(false);
 
   // Inicialización de tema
   useEffect(() => {
@@ -38,30 +41,51 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleStart = async () => {
+    // 1. LOGICA DE DETENER (Prioridad Alta)
+    // Si ya está sonando, el usuario quiere PARAR. Esto no debe ser bloqueado por isProcessingRef.
     if (isPlaying) {
-      // LOGICA DE STOP
       audioService.stop();
       setIsPlaying(false);
-      return;
+      // Al forzar el stop, el 'await playScale' de la ejecución anterior se resolverá 
+      // y limpiará el isProcessingRef en su bloque finally.
+      return; 
     }
 
-    // LOGICA DE PLAY
-    setIsPlaying(true);
-    
-    const intervals = SCALE_INTERVALS[selectedScaleId] || SCALE_INTERVALS['Mayor'];
-    
-    // playScale realiza la rutina completa de vocalización (modulación)
-    await audioService.playScale(
-      selectedNote, 
-      startOctave, 
-      endOctave, 
-      intervals, 
-      bpm, 
-      isMetronomeOn,
-      selectedScaleId
-    );
-    
-    setIsPlaying(false);
+    // 2. LOGICA DE INICIAR
+    // Si no está sonando, queremos empezar. Aquí sí evitamos doble click rápido.
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+
+    try {
+      setIsPlaying(true);
+      
+      // Pequeña pausa para asegurar que la UI se actualice a Rojo antes de la carga
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      const intervals = SCALE_INTERVALS[selectedScaleId] || SCALE_INTERVALS['Mayor'];
+      
+      // Ejecutar la escala (esto mantiene isProcessingRef = true mientras suena)
+      await audioService.playScale(
+        selectedNote, 
+        startOctave, 
+        endOctave, 
+        intervals, 
+        bpm, 
+        isMetronomeOn,
+        selectedScaleId
+      );
+      
+      // Si la escala termina naturalmente, cambiamos el estado aquí.
+      // Si se interrumpió con Stop, isPlaying ya será false, pero no hace daño setearlo.
+      setIsPlaying(false);
+
+    } catch (error) {
+      console.error("Error en reproducción:", error);
+      setIsPlaying(false);
+    } finally {
+      // Liberamos el bloqueo de inicio al terminar (ya sea por fin natural o por stop forzado)
+      isProcessingRef.current = false;
+    }
   };
 
   const ScaleButton: React.FC<{ label: string }> = ({ label }) => (
@@ -131,6 +155,7 @@ const HomeScreen: React.FC = () => {
               <h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
                 <ScaleButton label="Rossini" />
+                <ScaleButton label="Rossini Arpeggio" />
                 <ScaleButton label="Pentatónica Mayor" />
                 <ScaleButton label="Pentatónica Menor" />
                 <ScaleButton label="Blues" />
@@ -277,21 +302,24 @@ const HomeScreen: React.FC = () => {
 
       </div>
 
-      {/* Fixed Play/Stop Button - Elevado para no tapar el BottomNav */}
-      <div className="fixed bottom-[4.5rem] left-0 right-0 p-4 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md border-t border-gray-200 dark:border-gray-800 z-50">
-        <button 
-          onClick={handleStart}
-          className={`w-full h-14 rounded-xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg transition-all active:scale-[0.98] ${
-            isPlaying 
-            ? 'bg-red-500 hover:bg-red-600 text-white shadow-red-500/30' 
-            : 'bg-primary hover:bg-blue-600 text-white shadow-primary/30'
-          }`}
-        >
-          <span className={`material-symbols-outlined ${isPlaying ? '' : 'filled'}`}>
-            {isPlaying ? 'stop' : 'play_arrow'}
-          </span>
-          <span>{isPlaying ? 'Detener' : 'Comenzar'}</span>
-        </button>
+      {/* Fixed Play/Stop Button - Compact Pill Design */}
+      <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="pointer-events-auto shadow-2xl rounded-full">
+          <button 
+            onClick={handleStart}
+            // Eliminamos disabled condicional para asegurar que los clicks siempre lleguen a la lógica
+            className={`min-w-[200px] px-8 h-14 rounded-full font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.95] hover:scale-105 border-2 ${
+              isPlaying 
+              ? 'bg-red-500 hover:bg-red-600 text-white border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.4)]' 
+              : 'bg-primary hover:bg-blue-600 text-white border-blue-400 shadow-[0_0_20px_rgba(19,91,236,0.4)]'
+            }`}
+          >
+            <span className={`material-symbols-outlined text-3xl ${isPlaying ? '' : 'filled'}`}>
+              {isPlaying ? 'stop' : 'play_arrow'}
+            </span>
+            <span className="tracking-wide">{isPlaying ? 'Detener' : 'Comenzar'}</span>
+          </button>
+        </div>
       </div>
 
       <BottomNav activeTab="home" />

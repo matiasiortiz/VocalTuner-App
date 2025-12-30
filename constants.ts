@@ -28,7 +28,11 @@ export const SCALE_INTERVALS: Record<string, number[]> = {
   'Arpegio Disminuido': [0, 3, 6, 9, 12],
 
   // Estilos y Agilidad
-  'Rossini': [0, 2, 4, 5, 7, 9, 11, 12, 14], // Escala mayor hasta la 9na
+  // Patrón Rossini (13 notas):
+  // UP: C(0)-E(4)-G(7)-C(12)-E(16)-G(19)
+  // DOWN: F(17)-D(14)-B(11)-G(7)-F(5)-D(2)-C(0)
+  'Rossini': [0, 4, 7, 12, 16, 19, 17, 14, 11, 7, 5, 2, 0],
+  
   'Pentatónica Mayor': [0, 2, 4, 7, 9, 12],
   'Pentatónica Menor': [0, 3, 5, 7, 10, 12],
   'Blues': [0, 3, 5, 6, 7, 10, 12],
