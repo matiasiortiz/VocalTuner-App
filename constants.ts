@@ -44,9 +44,45 @@ export const SCALE_INTERVALS: Record<string, number[]> = {
   'Flamenca': [0, 1, 4, 5, 7, 8, 10, 12]
 };
 
-export const VIDEOS = [
-  { id: 1, title: "7 Consejos para cuidar tu VOZ y evitar lesiones", duration: "10:24", channel: "Canto a la Vida", views: "340K", videoId: "i-B71v7lR_w", thumbnail: "https://img.youtube.com/vi/i-B71v7lR_w/0.jpg" },
-  { id: 2, title: "Alimentos prohibidos para cantantes", duration: "06:15", channel: "Vox Vocal Studio", views: "1.2M", videoId: "GjQ3T200TjE", thumbnail: "https://img.youtube.com/vi/GjQ3T200TjE/0.jpg" },
-  { id: 3, title: "Cómo calentar la voz correctamente", duration: "12:50", channel: "Vocal Academy", views: "890K", videoId: "zV049X9vDsw", thumbnail: "https://img.youtube.com/vi/zV049X9vDsw/0.jpg" },
-  { id: 4, title: "Ejercicios de relajación laríngea", duration: "08:33", channel: "Logopedia TV", views: "150K", videoId: "vWz_H-3j04U", thumbnail: "https://img.youtube.com/vi/vWz_H-3j04U/0.jpg" },
+export const HEALTH_TIPS = [
+  { 
+    id: 1, 
+    title: "Hidratación Inteligente", 
+    icon: "water_drop",
+    content: "Las cuerdas vocales vibran mejor cuando están bien lubricadas. Bebe agua a lo largo del día, no solo durante el ensayo. Evita bebidas muy frías o muy calientes justo antes de cantar.",
+    source: "NIDCD (Instituto Nacional de la Sordera)",
+    sourceUrl: "https://www.nidcd.nih.gov/health/taking-care-your-voice"
+  },
+  { 
+    id: 2, 
+    title: "Descanso Vocal (Vocal Naps)", 
+    icon: "bedtime",
+    content: "Al igual que los atletas, las cuerdas vocales necesitan recuperación. Si has cantado mucho, intenta periodos de 15-20 minutos de silencio total para reducir la inflamación.",
+    source: "Duke Health Voice Care Center",
+    sourceUrl: "https://www.dukehealth.org/blog/9-tips-keep-your-voice-healthy"
+  },
+  { 
+    id: 3, 
+    title: "Evita el Carraspeo", 
+    icon: "do_not_touch",
+    content: "Carraspear golpea violentamente las cuerdas vocales. Si sientes flema, bebe un sorbo de agua, traga con fuerza o realiza un sonido de 'h' suave y aireada para limpiar la zona.",
+    source: "Texas Voice Center",
+    sourceUrl: "https://www.texasvoicecenter.com/advice.html"
+  },
+  { 
+    id: 4, 
+    title: "Calentamiento Obligatorio", 
+    icon: "self_improvement",
+    content: "Nunca cantes 'en frío'. Realiza ejercicios suaves de labios (lip trills) o sirenas suaves para aumentar el flujo sanguíneo a la laringe antes de exigir potencia.",
+    source: "British Voice Association",
+    sourceUrl: "https://www.britishvoiceassociation.org.uk/"
+  },
+  { 
+    id: 5, 
+    title: "Reflujo y Alimentación", 
+    icon: "restaurant",
+    content: "El reflujo gastroesofágico puede quemar las cuerdas vocales durante la noche. Evita comer 3 horas antes de dormir y alimentos muy ácidos o picantes si eres propenso.",
+    source: "Cleveland Clinic",
+    sourceUrl: "https://my.clevelandclinic.org/health/diseases/15024-laryngopharyngeal-reflux-lpr"
+  }
 ];

@@ -92,11 +92,48 @@
           'Blues': [0, 3, 5, 6, 7, 10, 12],
           'Flamenca': [0, 1, 4, 5, 7, 8, 10, 12]
         };
-        const VIDEOS = [ 
-            { id: 1, title: "7 Consejos para cuidar tu VOZ y evitar lesiones", duration: "10:24", channel: "Canto a la Vida", views: "340K", videoId: "i-B71v7lR_w", thumbnail: "https://img.youtube.com/vi/i-B71v7lR_w/0.jpg" }, 
-            { id: 2, title: "Alimentos prohibidos para cantantes", duration: "06:15", channel: "Vox Vocal Studio", views: "1.2M", videoId: "GjQ3T200TjE", thumbnail: "https://img.youtube.com/vi/GjQ3T200TjE/0.jpg" }, 
-            { id: 3, title: "Cómo calentar la voz correctamente", duration: "12:50", channel: "Vocal Academy", views: "890K", videoId: "zV049X9vDsw", thumbnail: "https://img.youtube.com/vi/zV049X9vDsw/0.jpg" }, 
-            { id: 4, title: "Ejercicios de relajación laríngea", duration: "08:33", channel: "Logopedia TV", views: "150K", videoId: "vWz_H-3j04U", thumbnail: "https://img.youtube.com/vi/vWz_H-3j04U/0.jpg" } 
+        
+        const HEALTH_TIPS = [
+          { 
+            id: 1, 
+            title: "Hidratación Inteligente", 
+            icon: "water_drop",
+            content: "Las cuerdas vocales vibran mejor cuando están bien lubricadas. Bebe agua a lo largo del día, no solo durante el ensayo. Evita bebidas muy frías o muy calientes justo antes de cantar.",
+            source: "NIDCD (Instituto Nacional de la Sordera)",
+            sourceUrl: "https://www.nidcd.nih.gov/health/taking-care-your-voice"
+          },
+          { 
+            id: 2, 
+            title: "Descanso Vocal (Vocal Naps)", 
+            icon: "bedtime",
+            content: "Al igual que los atletas, las cuerdas vocales necesitan recuperación. Si has cantado mucho, intenta periodos de 15-20 minutos de silencio total para reducir la inflamación.",
+            source: "Duke Health Voice Care Center",
+            sourceUrl: "https://www.dukehealth.org/blog/9-tips-keep-your-voice-healthy"
+          },
+          { 
+            id: 3, 
+            title: "Evita el Carraspeo", 
+            icon: "do_not_touch",
+            content: "Carraspear golpea violentamente las cuerdas vocales. Si sientes flema, bebe un sorbo de agua, traga con fuerza o realiza un sonido de 'h' suave y aireada para limpiar la zona.",
+            source: "Texas Voice Center",
+            sourceUrl: "https://www.texasvoicecenter.com/advice.html"
+          },
+          { 
+            id: 4, 
+            title: "Calentamiento Obligatorio", 
+            icon: "self_improvement",
+            content: "Nunca cantes 'en frío'. Realiza ejercicios suaves de labios (lip trills) o sirenas suaves para aumentar el flujo sanguíneo a la laringe antes de exigir potencia.",
+            source: "British Voice Association",
+            sourceUrl: "https://www.britishvoiceassociation.org.uk/"
+          },
+          { 
+            id: 5, 
+            title: "Reflujo y Alimentación", 
+            icon: "restaurant",
+            content: "El reflujo gastroesofágico puede quemar las cuerdas vocales durante la noche. Evita comer 3 horas antes de dormir y alimentos muy ácidos o picantes si eres propenso.",
+            source: "Cleveland Clinic",
+            sourceUrl: "https://my.clevelandclinic.org/health/diseases/15024-laryngopharyngeal-reflux-lpr"
+          }
         ];
 
         // --- AUDIO SERVICE ---
@@ -676,7 +713,10 @@
         };
 
         const HealthScreen = () => {
-          const [activeVideo, setActiveVideo] = useState(null);
+          const handleDeepLinkSearch = () => {
+            window.open('https://www.youtube.com/results?search_query=ejercicios+salud+vocal+cantantes', '_blank');
+          };
+
           return (
             <div className="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 antialiased overflow-x-hidden min-h-screen pb-24">
               <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
@@ -688,57 +728,37 @@
                   </div>
                 </div>
                 <h1 className="text-3xl font-black tracking-tight">Salud Vocal</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Recursos y consejos para el cuidado de tu instrumento.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Consejos expertos y cuidado clínico para tu voz.</p>
               </header>
               <main className="px-4 pt-6 space-y-8">
-                {activeVideo && (
-                  <section className="animate-in fade-in slide-in-from-top-4 duration-500">
-                    <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-2xl border border-primary/20 bg-black">
-                      <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${activeVideo}?autoplay=1`} title="YouTube video player" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
-                    </div>
-                    <button onClick={() => setActiveVideo(null)} className="mt-3 w-full py-2 text-primary font-bold text-sm bg-primary/10 rounded-xl">Cerrar Video</button>
-                  </section>
-                )}
-                {!activeVideo && (
-                   <section>
-                    <h2 className="text-xl font-black mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-red-500">local_fire_department</span> Lo más visto</h2>
-                    <div onClick={() => setActiveVideo("vWz_H-3j04U")} className="relative group cursor-pointer overflow-hidden rounded-3xl shadow-xl bg-surface-dark">
-                      <div className="aspect-video w-full bg-gray-800 relative">
-                        <img alt="Featured Health" className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-all duration-500 group-hover:scale-105" src="https://picsum.photos/seed/vocal-health/800/450" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform"><span className="material-symbols-outlined text-white text-[40px] ml-1">play_arrow</span></div>
-                        </div>
-                        <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold text-white border border-white/20">Video del Mes</div>
-                      </div>
-                      <div className="p-5 bg-white dark:bg-surface-dark">
-                        <h3 className="text-lg font-black leading-tight mb-2 line-clamp-2">Fundamentos de la Higiene Vocal: Qué hacer y qué evitar</h3>
-                        <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400"><img src="https://picsum.photos/seed/doctor/40/40" className="w-8 h-8 rounded-full" alt="channel" /><span>Dr. Voz • 1.2M vistas</span></div>
-                      </div>
-                    </div>
-                  </section>
-                )}
+                <section className="bg-surface-light dark:bg-surface-dark p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-lg">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary shrink-0"><span className="material-symbols-outlined text-2xl">medical_services</span></div>
+                    <div><h2 className="text-lg font-bold mb-1">Cuidado Profesional</h2><p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">Tu voz es un instrumento biológico. Aquí encontrarás pautas basadas en la medicina foniátrica para mantenerla sana y potente.</p></div>
+                  </div>
+                </section>
                 <section className="space-y-6">
-                  <h2 className="text-xl font-black">Biblioteca de Salud</h2>
-                  <div className="grid gap-6">
-                    {VIDEOS.map(video => (
-                      <div key={video.id} onClick={() => { setActiveVideo(video.videoId); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="flex items-center gap-4 group cursor-pointer bg-white dark:bg-surface-dark/40 p-3 rounded-2xl border border-transparent hover:border-primary/30 transition-all active:scale-[0.98]">
-                        <div className="relative w-32 aspect-video shrink-0 rounded-xl overflow-hidden shadow-md">
-                          <img src={video.thumbnail} className="w-full h-full object-cover" alt={video.title} />
-                          <div className="absolute bottom-1 right-1 bg-black/80 px-1.5 py-0.5 rounded text-[10px] font-bold text-white">{video.duration}</div>
-                          <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"><span className="material-symbols-outlined text-white">play_circle</span></div>
+                  <div className="flex items-center justify-between"><h2 className="text-xl font-black flex items-center gap-2"><span className="material-symbols-outlined text-green-500">verified</span>Consejos Certificados</h2></div>
+                  <div className="grid gap-5">
+                    {HEALTH_TIPS.map(tip => (
+                      <div key={tip.id} className="bg-white dark:bg-[#1c2333] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-lg">{tip.icon}</span></div>
+                          <h3 className="text-base font-bold leading-tight">{tip.title}</h3>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-bold leading-tight line-clamp-2 group-hover:text-primary transition-colors">{video.title}</h3>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider font-bold">{video.channel}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5">{video.views} reproducciones</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{tip.content}</p>
+                        <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fuente</span>
+                          <a href={tip.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">{tip.source}<span className="material-symbols-outlined text-[14px]">open_in_new</span></a>
                         </div>
                       </div>
                     ))}
                   </div>
+                  <button onClick={handleDeepLinkSearch} className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-500 hover:text-red-500 hover:border-red-500/50 hover:bg-red-500/5 transition-all active:scale-95 group mt-4"><span className="material-symbols-outlined group-hover:animate-bounce">video_library</span><span className="font-bold text-sm uppercase tracking-wider">Ver ejercicios en YouTube</span></button>
                 </section>
                 <section className="bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-3xl p-6 border border-primary/20">
                   <h2 className="text-lg font-black mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-primary">info</span> Tip Rápido</h2>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">"Nunca fuerces la voz si sientes carraspera o fatiga. El silencio es el mejor ejercicio en momentos de cansancio vocal."</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">"Si tienes ronquera (disfonía) que dura más de 2 semanas sin un resfriado aparente, consulta inmediatamente a un otorrinolaringólogo."</p>
                 </section>
               </main>
               <BottomNav activeTab="health" />
@@ -834,140 +854,6 @@
                       <div className="flex gap-3 w-full mt-3">
                         <button onClick={() => setScaleToDelete(null)} className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Cancelar</button>
                         <button onClick={confirmDelete} className="flex-1 h-12 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all active:scale-95">Eliminar</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        };
-
-        const CreateScaleScreen = () => {
-          const navigate = useNavigate();
-          const { id } = useParams();
-          const [scaleName, setScaleName] = useState('');
-          const [selectedDuration, setSelectedDuration] = useState('quarter');
-          const [sequence, setSequence] = useState([]);
-          const [showClearModal, setShowClearModal] = useState(false);
-          const [currentOctave, setCurrentOctave] = useState(4);
-
-          useEffect(() => {
-            if (id) {
-              try {
-                const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
-                const scaleToEdit = savedScales.find(s => s.id.toString() === id.toString());
-                if (scaleToEdit) { setScaleName(scaleToEdit.name); setSequence(scaleToEdit.notes); } else { navigate('/scales'); }
-              } catch (e) { console.error("Error loading scale to edit", e); navigate('/scales'); }
-            }
-          }, [id, navigate]);
-          const addNote = (note) => {
-            const newItem = { note, duration: selectedDuration };
-            setSequence([...sequence, newItem]);
-            audioService.playNote(note, 0.4);
-          };
-          const undo = () => { setSequence(prev => prev.slice(0, -1)); };
-          const requestClear = (e) => { e.preventDefault(); e.stopPropagation(); setShowClearModal(true); };
-          const confirmClear = () => { setSequence([]); setShowClearModal(false); };
-          const handleSave = () => {
-            if (!scaleName.trim()) { alert("Por favor, ingresa un nombre para la escala."); return; }
-            if (sequence.length === 0) { alert("Por favor, añade al menos una nota."); return; }
-            try {
-              const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
-              if (id) {
-                const updatedScales = savedScales.map(s => s.id.toString() === id.toString() ? { ...s, name: scaleName, notes: sequence } : s);
-                localStorage.setItem('vocal_scales', JSON.stringify(updatedScales));
-              } else {
-                const newScale = { id: Date.now().toString(), name: scaleName, notes: sequence, createdAt: Date.now() };
-                localStorage.setItem('vocal_scales', JSON.stringify([...savedScales, newScale]));
-              }
-              navigate('/scales');
-            } catch (e) { console.error("Error saving scale", e); }
-          };
-          const playSequence = async () => { if (sequence.length === 0) return; await audioService.playSequence(sequence); };
-          const durationLabels = { whole: 'Redonda', half: 'Blanca', quarter: 'Negra', eighth: 'Corchea' };
-          const baseNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-          const whiteKeys = [
-            ...baseNotes.map(n => `${n}${currentOctave}`),
-            `C${currentOctave + 1}`
-          ];
-          const blackKeysConfig = [ { noteBase: 'C#', left: '8.5%' }, { noteBase: 'D#', left: '21%' }, { noteBase: 'F#', left: '46%' }, { noteBase: 'G#', left: '58.5%' }, { noteBase: 'A#', left: '71%' } ];
-
-          return (
-            <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
-              <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5">
-                <button type="button" onClick={() => navigate('/scales')} className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer" aria-label="Cerrar"><span className="material-symbols-outlined text-[36px] pointer-events-none">close</span></button>
-                <h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1>
-                <button type="button" onClick={handleSave} className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer">{id ? 'Listo' : 'Guardar'}</button>
-              </header>
-              <main className="flex-1 overflow-y-auto no-scrollbar pb-[340px] px-5 pt-6 relative z-10">
-                <div className="mb-6">
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
-                  <input value={scaleName} onChange={(e) => setScaleName(e.target.value)} className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="Ej. Mi Escala..." />
-                </div>
-                <div className="mb-8">
-                  <span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span>
-                  <div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">
-                    {['whole', 'half', 'quarter', 'eighth'].map((dur) => (
-                      <button key={dur} type="button" onClick={() => setSelectedDuration(dur)} className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}>{durationLabels[dur]}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-2 flex items-center justify-between relative z-[100]">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>
-                    {sequence.length > 0 && (<button type="button" onClick={requestClear} className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all">Limpiar</button>)}
-                  </div>
-                </div>
-                <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4">
-                  <div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}</div>
-                  <div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">
-                    {sequence.length === 0 ? (
-                      <div className="w-full text-center flex flex-col items-center gap-2 opacity-30"><span className="material-symbols-outlined text-4xl">music_note</span><span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span></div>
-                    ) : (
-                      sequence.map((item, idx) => (
-                        <div key={idx} className="flex flex-col items-center gap-3 shrink-0">
-                          <div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}><span className="text-sm font-black text-white">{item.note}</span></div>
-                          <span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </main>
-              <div className="absolute bottom-0 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
-                <div className="flex items-center justify-between px-4 py-4 gap-2">
-                  <button type="button" onClick={playSequence} disabled={sequence.length === 0} className={`flex items-center gap-2 active:scale-95 transition-all shrink-0 ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}><span className="material-symbols-outlined fill-1 text-[36px] pointer-events-none">play_circle</span></button>
-                  <div className="flex items-center justify-center gap-1 bg-[#0b0f17] p-1 rounded-xl border border-white/5">
-                    {[3, 4, 5].map(oct => (
-                      <button key={oct} onClick={() => setCurrentOctave(oct)} className={`h-8 w-10 rounded-lg text-[10px] font-black transition-all ${currentOctave === oct ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>C{oct}</button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">undo</span></button>
-                    <button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">backspace</span></button>
-                  </div>
-                </div>
-                <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
-                  {whiteKeys.map((note) => (
-                    <div key={note} onClick={() => addNote(note)} className="relative flex-1 bg-white border-r border-slate-300 rounded-b-2xl active:bg-slate-200 cursor-pointer shadow-inner"><span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">{note}</span></div>
-                  ))}
-                  {blackKeysConfig.map((bk) => {
-                    const noteName = `${bk.noteBase}${currentOctave}`;
-                    return (<div key={noteName} onClick={() => addNote(noteName)} style={{ left: bk.left }} className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"></div>);
-                  })}
-                </div>
-              </div>
-              {showClearModal && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                  <div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200">
-                    <div className="flex flex-col items-center text-center gap-4">
-                      <div className="size-16 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-1 border border-orange-500/20"><span className="material-symbols-outlined text-3xl">cleaning_services</span></div>
-                      <div><h3 className="text-xl font-bold mb-2 text-white">¿Limpiar Notas?</h3><p className="text-sm text-gray-400 leading-relaxed">¿Deseas borrar toda la secuencia de notas actual?</p></div>
-                      <div className="flex gap-3 w-full mt-3">
-                        <button onClick={() => setShowClearModal(false)} className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Cancelar</button>
-                        <button onClick={confirmClear} className="flex-1 h-12 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all active:scale-95">Borrar Todo</button>
                       </div>
                     </div>
                   </div>
