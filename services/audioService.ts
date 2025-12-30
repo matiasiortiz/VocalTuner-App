@@ -299,15 +299,14 @@ class PianoAudioService {
 
         // Construcción de la secuencia de notas
         if (scaleId === 'Rossini') {
-            // Rossini usa el patrón definido en constants EXACTAMENTE como está
-            // Semicorcheas (aprox 1/4 de tiempo)
+            // Patrones de ejercicio ágil: solo ida, más rápido
             noteDur = beatDuration * 0.25; 
             intervals.forEach(interval => {
                 const noteAbs = currentRootAbs + interval;
                 scaleSequence.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
             });
         } else {
-            // Escalas normales: Subir y bajar
+            // Escalas normales (Incluyendo Progresión por Terceras): Subir y bajar
             const scaleNotes: string[] = [];
             intervals.forEach(interval => {
                 const noteAbs = currentRootAbs + interval;

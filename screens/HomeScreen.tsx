@@ -137,7 +137,7 @@ const HomeScreen: React.FC = () => {
               <h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Modales y Variaciones</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
                 <ScaleButton label="Dórica" />
-                <ScaleButton label="Dórica Menor" />
+                <ScaleButton label="Menor Armónica" />
                 <ScaleButton label="Aumentada" />
               </div>
             </div>
@@ -155,6 +155,7 @@ const HomeScreen: React.FC = () => {
               <h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3>
               <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar">
                 <ScaleButton label="Rossini" />
+                <ScaleButton label="Progresión por Terceras" />
                 <ScaleButton label="Rossini Arpeggio" />
                 <ScaleButton label="Pentatónica Mayor" />
                 <ScaleButton label="Pentatónica Menor" />
