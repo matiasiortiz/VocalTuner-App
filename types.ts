@@ -2,8 +2,14 @@
 export interface ScaleItem {
   id: string;
   name: string;
-  notes: SequenceNote[];
+  notes: SequenceNote[]; // Para visualización/edición (notas originales)
+  relativeNotes?: RelativeNote[]; // Para reproducción dinámica (intervalos)
   createdAt: number;
+}
+
+export interface RelativeNote {
+  interval: number; // Semitonos de distancia desde la raíz (0)
+  duration: DurationType;
 }
 
 export interface VocalVideo {

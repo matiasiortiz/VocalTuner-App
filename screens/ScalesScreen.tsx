@@ -3,13 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BottomNav from '../components/BottomNav';
 import { audioService } from '../services/audioService';
-import { ScaleItem } from '../types';
+import { ScaleItem, RelativeNote, SequenceNote } from '../types';
+import { NOTES } from '../constants';
 
 const ScalesScreen: React.FC = () => {
   const navigate = useNavigate();
   const [customScales, setCustomScales] = useState<ScaleItem[]>([]);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [scaleToDelete, setScaleToDelete] = useState<string | null>(null);
+
+  // Estados de configuración de reproducción
+  const [selectedNote, setSelectedNote] = useState("C");
+  const [startOctave, setStartOctave] = useState(3);
+  const [endOctave, setEndOctave] = useState(4);
+  const [bpm, setBpm] = useState(120);
 
   const loadScales = () => {
     try {
@@ -34,10 +41,70 @@ const ScalesScreen: React.FC = () => {
   const playCustom = async (e: React.MouseEvent, scale: ScaleItem) => {
     e.preventDefault();
     e.stopPropagation();
-    if (playingId) return;
+    
+    // Si ya se está reproduciendo ESTA escala, detenerla.
+    if (playingId === scale.id) {
+      audioService.stop();
+      setPlayingId(null);
+      return;
+    }
+
+    // Si se está reproduciendo OTRA, detenerla primero (audioService.play... lo hace, pero limpiamos estado)
+    if (playingId) {
+      audioService.stop();
+    }
+
     setPlayingId(scale.id);
-    await audioService.playSequence(scale.notes);
+
+    // Si la escala tiene intervalos guardados (nueva versión), usamos la reproducción dinámica
+    if (scale.relativeNotes && scale.relativeNotes.length > 0) {
+      await audioService.playCustomElasticScale(
+        selectedNote, 
+        startOctave, 
+        endOctave, 
+        scale.relativeNotes,
+        bpm
+      );
+    } 
+    // Fallback para escalas antiguas
+    else {
+      const calculatedRelatives = calculateRelativesFromAbsolute(scale.notes);
+      if (calculatedRelatives.length > 0) {
+         await audioService.playCustomElasticScale(
+          selectedNote, 
+          startOctave, 
+          endOctave, 
+          calculatedRelatives,
+          bpm
+        );
+      } else {
+        await audioService.playSequence(scale.notes, bpm);
+      }
+    }
+    
     setPlayingId(null);
+  };
+
+  const handleStop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    audioService.stop();
+    setPlayingId(null);
+  };
+
+  // Helper para convertir escalas viejas a intervalos al vuelo si es necesario
+  const calculateRelativesFromAbsolute = (notes: SequenceNote[]): RelativeNote[] => {
+    if (!notes || notes.length === 0) return [];
+    const getVal = (n: string) => {
+       const m = n.match(/^([A-G][#]?)(-?\d+)$/);
+       if (!m) return 0;
+       return (parseInt(m[2]) * 12) + NOTES.indexOf(m[1]);
+    };
+    const rootVal = getVal(notes[0].note);
+    return notes.map(n => ({
+      interval: getVal(n.note) - rootVal,
+      duration: n.duration
+    }));
   };
 
   const requestDelete = (e: React.MouseEvent, id: string) => {
@@ -77,6 +144,75 @@ const ScalesScreen: React.FC = () => {
         <p className="text-gray-500 mt-1 italic text-sm">Gestiona tus escalas personalizadas aquí.</p>
       </header>
 
+      {/* Controles de Configuración Global */}
+      <div className="bg-[#111622] border-b border-gray-800 px-6 py-4 sticky top-0 z-[30] shadow-xl">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Configuración de Reproducción</h3>
+             <div className="flex gap-2">
+                <span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded font-bold">{selectedNote}{startOctave}-{selectedNote}{endOctave}</span>
+                <span className="text-[10px] bg-gray-800 text-gray-300 px-2 py-1 rounded font-bold">{bpm} BPM</span>
+             </div>
+          </div>
+          
+          {/* Selectores de Nota y Octava */}
+          <div className="grid grid-cols-3 gap-2">
+             <div className="relative">
+                <select 
+                  value={selectedNote} 
+                  onChange={(e) => setSelectedNote(e.target.value)}
+                  className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary"
+                >
+                  {NOTES.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div>
+             </div>
+
+             <div className="relative">
+                <select 
+                  value={startOctave} 
+                  onChange={(e) => setStartOctave(Number(e.target.value))}
+                  className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary"
+                >
+                  {[2, 3, 4, 5].map(n => <option key={n} value={n}>Oct {n}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div>
+             </div>
+
+             <div className="relative">
+                <select 
+                  value={endOctave} 
+                  onChange={(e) => setEndOctave(Number(e.target.value))}
+                  className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary"
+                >
+                  {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>Oct {n}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div>
+             </div>
+          </div>
+
+          {/* Selector de BPM */}
+          <div className="flex flex-col gap-1 mt-1">
+            <div className="flex justify-between items-center px-1">
+               <span className="text-[10px] text-gray-500 font-bold uppercase">Velocidad</span>
+            </div>
+            <div className="relative w-full h-6 flex items-center">
+                <input 
+                  type="range" 
+                  min="40" 
+                  max="240" 
+                  value={bpm}
+                  onChange={(e) => setBpm(Number(e.target.value))}
+                  className="w-full h-1.5 bg-[#1c2333] rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none z-10"
+                  style={{ 
+                    backgroundImage: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(240-40)*100}%, #1c2333 ${(bpm-40)/(240-40)*100}%, #1c2333 100%)` 
+                  }}
+                />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <main className="px-6 py-8 space-y-6 relative z-[10]">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold flex items-center gap-2">
@@ -103,21 +239,21 @@ const ScalesScreen: React.FC = () => {
             {customScales.map(scale => (
               <div 
                 key={scale.id} 
-                className="bg-[#1c2333] p-5 rounded-2xl border border-gray-800 relative group overflow-hidden"
+                className={`bg-[#1c2333] p-5 rounded-2xl border transition-all relative group overflow-hidden ${playingId === scale.id ? 'border-primary shadow-glow' : 'border-gray-800'}`}
               >
                 <div className="flex items-center justify-between relative z-10">
                   <div 
                     onClick={(e) => playCustom(e, scale)}
                     className="flex items-center gap-4 flex-1 min-w-0 pr-2 cursor-pointer group/info"
                   >
-                    <div className={`size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-all shrink-0 ${playingId === scale.id ? 'animate-pulse bg-primary text-white shadow-glow' : 'group-hover/info:bg-primary/20'}`}>
+                    <div className={`size-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${playingId === scale.id ? 'bg-red-500 text-white shadow-lg shadow-red-500/40' : 'bg-primary/10 text-primary group-hover/info:bg-primary/20'}`}>
                       <span className="material-symbols-outlined text-2xl pointer-events-none">
-                        {playingId === scale.id ? 'graphic_eq' : 'play_arrow'}
+                        {playingId === scale.id ? 'stop' : 'play_arrow'}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-bold text-base truncate pr-2">{scale.name}</h3>
-                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{scale.notes.length} notas musicales</p>
+                      <h3 className={`font-bold text-base truncate pr-2 ${playingId === scale.id ? 'text-primary' : 'text-white'}`}>{scale.name}</h3>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{scale.notes.length} notas en patrón</p>
                     </div>
                   </div>
                   

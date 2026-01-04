@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { audioService } from '../services/audioService';
-import { DurationType, SequenceNote } from '../types';
+import { DurationType, SequenceNote, RelativeNote } from '../types';
+import { NOTES } from '../constants';
 
 const CreateScaleScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,6 @@ const CreateScaleScreen: React.FC = () => {
   const [sequence, setSequence] = useState<SequenceNote[]>([]);
   const [showClearModal, setShowClearModal] = useState(false);
   
-  // Estado para controlar la octava actual del piano (3, 4, o 5)
   const [currentOctave, setCurrentOctave] = useState<number>(4);
 
   useEffect(() => {
@@ -36,7 +36,6 @@ const CreateScaleScreen: React.FC = () => {
   const addNote = (note: string) => {
     const newItem: SequenceNote = { note, duration: selectedDuration };
     setSequence([...sequence, newItem]);
-    // Reproducir usando nombre de nota para sample real
     audioService.playNote(note, 0.4);
   };
 
@@ -55,6 +54,16 @@ const CreateScaleScreen: React.FC = () => {
     setShowClearModal(false);
   };
 
+  // Helper para convertir nota absoluta a valor numérico (semitonos absolutos)
+  const getNoteValue = (noteStr: string): number => {
+    const match = noteStr.match(/^([A-G][#]?)(-?\d+)$/);
+    if (!match) return 0;
+    const [_, name, octaveStr] = match;
+    const octave = parseInt(octaveStr, 10);
+    const noteIndex = NOTES.indexOf(name);
+    return (octave * 12) + noteIndex;
+  };
+
   const handleSave = () => {
     if (!scaleName.trim()) {
       alert("Por favor, ingresa un nombre para la escala.");
@@ -65,18 +74,31 @@ const CreateScaleScreen: React.FC = () => {
       return;
     }
 
+    // Calcular intervalos relativos basados en la primera nota
+    const rootNoteValue = getNoteValue(sequence[0].note);
+    const relativeNotes: RelativeNote[] = sequence.map(s => ({
+      interval: getNoteValue(s.note) - rootNoteValue,
+      duration: s.duration
+    }));
+
     try {
       const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
       if (id) {
         const updatedScales = savedScales.map((s: any) => 
-          s.id.toString() === id.toString() ? { ...s, name: scaleName, notes: sequence } : s
+          s.id.toString() === id.toString() ? { 
+            ...s, 
+            name: scaleName, 
+            notes: sequence, 
+            relativeNotes: relativeNotes 
+          } : s
         );
         localStorage.setItem('vocal_scales', JSON.stringify(updatedScales));
       } else {
         const newScale = {
           id: Date.now().toString(),
           name: scaleName,
-          notes: sequence,
+          notes: sequence, // Guardamos notas originales para visualización/edición
+          relativeNotes: relativeNotes, // Guardamos intervalos para reproducción dinámica
           createdAt: Date.now()
         };
         localStorage.setItem('vocal_scales', JSON.stringify([...savedScales, newScale]));
@@ -89,7 +111,7 @@ const CreateScaleScreen: React.FC = () => {
 
   const playSequence = async () => {
     if (sequence.length === 0) return;
-    await audioService.playSequence(sequence);
+    await audioService.playSequence(sequence, 120); // Default BPM para preview
   };
 
   const durationLabels: Record<DurationType, string> = {
@@ -99,11 +121,10 @@ const CreateScaleScreen: React.FC = () => {
     eighth: 'Corchea'
   };
 
-  // Generación dinámica de teclas basada en la octava actual
   const baseNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
   const whiteKeys = [
     ...baseNotes.map(n => `${n}${currentOctave}`),
-    `C${currentOctave + 1}` // Incluir el Do de la siguiente octava
+    `C${currentOctave + 1}`
   ];
 
   const blackKeysConfig = [
@@ -116,7 +137,6 @@ const CreateScaleScreen: React.FC = () => {
 
   return (
     <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
-      {/* Header */}
       <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5">
         <button 
           type="button"
@@ -135,7 +155,6 @@ const CreateScaleScreen: React.FC = () => {
           {id ? 'Listo' : 'Guardar'}</button>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto no-scrollbar pb-[340px] px-5 pt-6 relative z-10">
         <div className="mb-6">
           <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
@@ -163,7 +182,6 @@ const CreateScaleScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Sección de notas */}
         <div className="mb-2 flex items-center justify-between relative z-[100]">
           <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
           <div className="flex items-center gap-3">
@@ -204,10 +222,8 @@ const CreateScaleScreen: React.FC = () => {
         </div>
       </main>
 
-      {/* Piano Controls */}
       <div className="absolute bottom-0 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
         <div className="flex items-center justify-between px-4 py-4 gap-2">
-          {/* Botón de reproducción */}
           <button 
             type="button"
             onClick={playSequence} 
@@ -217,7 +233,6 @@ const CreateScaleScreen: React.FC = () => {
             <span className="material-symbols-outlined fill-1 text-[36px] pointer-events-none">play_circle</span>
           </button>
 
-          {/* Selector de Octavas (Central) */}
           <div className="flex items-center justify-center gap-1 bg-[#0b0f17] p-1 rounded-xl border border-white/5">
             {[3, 4, 5].map(oct => (
               <button
@@ -234,7 +249,6 @@ const CreateScaleScreen: React.FC = () => {
             ))}
           </div>
           
-          {/* Botones de acción (Deshacer) */}
           <div className="flex items-center gap-3 shrink-0">
             <button 
               type="button"
@@ -255,7 +269,6 @@ const CreateScaleScreen: React.FC = () => {
           </div>
         </div>
 
-        {/* Teclado de Piano Dinámico */}
         <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
           {whiteKeys.map((note) => (
             <div 
@@ -280,7 +293,6 @@ const CreateScaleScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Clear Confirmation Modal */}
       {showClearModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
           <div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200">
