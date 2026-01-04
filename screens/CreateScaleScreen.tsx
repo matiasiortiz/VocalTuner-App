@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { audioService } from '../services/audioService';
 import { DurationType, SequenceNote, RelativeNote } from '../types';
 import { NOTES } from '../constants';
+import BottomNav from '../components/BottomNav';
 
 const CreateScaleScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -54,7 +55,6 @@ const CreateScaleScreen: React.FC = () => {
     setShowClearModal(false);
   };
 
-  // Helper para convertir nota absoluta a valor numérico (semitonos absolutos)
   const getNoteValue = (noteStr: string): number => {
     const match = noteStr.match(/^([A-G][#]?)(-?\d+)$/);
     if (!match) return 0;
@@ -74,7 +74,6 @@ const CreateScaleScreen: React.FC = () => {
       return;
     }
 
-    // Calcular intervalos relativos basados en la primera nota
     const rootNoteValue = getNoteValue(sequence[0].note);
     const relativeNotes: RelativeNote[] = sequence.map(s => ({
       interval: getNoteValue(s.note) - rootNoteValue,
@@ -97,8 +96,8 @@ const CreateScaleScreen: React.FC = () => {
         const newScale = {
           id: Date.now().toString(),
           name: scaleName,
-          notes: sequence, // Guardamos notas originales para visualización/edición
-          relativeNotes: relativeNotes, // Guardamos intervalos para reproducción dinámica
+          notes: sequence,
+          relativeNotes: relativeNotes,
           createdAt: Date.now()
         };
         localStorage.setItem('vocal_scales', JSON.stringify([...savedScales, newScale]));
@@ -111,7 +110,7 @@ const CreateScaleScreen: React.FC = () => {
 
   const playSequence = async () => {
     if (sequence.length === 0) return;
-    await audioService.playSequence(sequence, 120); // Default BPM para preview
+    await audioService.playSequence(sequence, 120);
   };
 
   const durationLabels: Record<DurationType, string> = {
@@ -155,7 +154,8 @@ const CreateScaleScreen: React.FC = () => {
           {id ? 'Listo' : 'Guardar'}</button>
       </header>
 
-      <main className="flex-1 overflow-y-auto no-scrollbar pb-[340px] px-5 pt-6 relative z-10">
+      {/* Increased bottom padding to 420px to clear the elevated piano */}
+      <main className="flex-1 overflow-y-auto no-scrollbar pb-[420px] px-5 pt-6 relative z-10">
         <div className="mb-6">
           <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
           <input 
@@ -222,7 +222,8 @@ const CreateScaleScreen: React.FC = () => {
         </div>
       </main>
 
-      <div className="absolute bottom-0 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
+      {/* Piano controls moved up to bottom-16 (approx 64px/4rem) to sit above the Nav */}
+      <div className="absolute bottom-16 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
         <div className="flex items-center justify-between px-4 py-4 gap-2">
           <button 
             type="button"
@@ -292,6 +293,8 @@ const CreateScaleScreen: React.FC = () => {
           })}
         </div>
       </div>
+
+      <BottomNav activeTab="scales" />
 
       {showClearModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
