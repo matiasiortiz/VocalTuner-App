@@ -78,7 +78,8 @@
           'Menor': [0, 2, 3, 5, 7, 8, 10, 12],
           'Cromática': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
           'Dórica': [0, 2, 3, 5, 7, 9, 10, 12],
-          'Menor Armónica': [0, 2, 3, 5, 7, 8, 11, 12],
+          'Flamenca': [0, 2, 3, 5, 7, 8, 11, 12], 
+          'Flamenca 8va Descendente': [0, 12, 11, 8, 7, 5, 3, 2, 0],
           'Aumentada': [0, 3, 4, 7, 8, 11, 12],
           'Arpegio Mayor': [0, 4, 7, 12],
           'Arpegio Menor': [0, 3, 7, 12],
@@ -89,7 +90,6 @@
           'Pentatónica Mayor': [0, 2, 4, 7, 9, 12],
           'Pentatónica Menor': [0, 3, 5, 7, 10, 12],
           'Blues': [0, 3, 5, 6, 7, 10, 12],
-          'Flamenca': [0, 1, 4, 5, 7, 8, 10, 12]
         };
 
         const HEALTH_TIPS = [
@@ -357,13 +357,16 @@
                     let scaleSequence = [];
                     let noteDur = beatDuration * 0.5;
 
-                    if (scaleId === 'Rossini') {
+                    // Construcción de la secuencia de notas
+                    if (scaleId === 'Rossini' || scaleId === 'Flamenca 8va Descendente') {
+                        // Patrones de ejercicio ágil: solo ida
                         noteDur = beatDuration * 0.25; 
                         intervals.forEach(interval => {
                             const noteAbs = currentRootAbs + interval;
                             scaleSequence.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
                         });
                     } else {
+                        // Escalas normales: Subir y bajar
                         const scaleNotes = [];
                         intervals.forEach(interval => {
                             const noteAbs = currentRootAbs + interval;
@@ -514,9 +517,9 @@
                   <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-3 pt-4">Selecciona una escala</h2>
                   <div className="flex flex-col gap-4">
                     <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Escalas Básicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Mayor" /><ScaleButton label="Menor Natural" /><ScaleButton label="Cromática" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Modales y Variaciones</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Dórica" /><ScaleButton label="Menor Armónica" /><ScaleButton label="Aumentada" /></div></div>
+                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Modales y Variaciones</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Dórica" /><ScaleButton label="Flamenca" /><ScaleButton label="Flamenca 8va Descendente" /><ScaleButton label="Aumentada" /></div></div>
                     <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Arpegios</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Arpegio Mayor" /><ScaleButton label="Arpegio Menor" /><ScaleButton label="Arpegio Disminuido" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Rossini" /><ScaleButton label="Progresión por Terceras" /><ScaleButton label="Rossini Arpeggio" /><ScaleButton label="Pentatónica Mayor" /><ScaleButton label="Pentatónica Menor" /><ScaleButton label="Blues" /><ScaleButton label="Flamenca" /></div></div>
+                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Rossini" /><ScaleButton label="Progresión por Terceras" /><ScaleButton label="Rossini Arpeggio" /><ScaleButton label="Pentatónica Mayor" /><ScaleButton label="Pentatónica Menor" /><ScaleButton label="Blues" /></div></div>
                   </div>
                 </div>
 
@@ -712,10 +715,6 @@
         };
 
         const HealthScreen = () => {
-          const handleDeepLinkSearch = () => {
-            window.open('https://www.youtube.com/results?search_query=ejercicios+salud+vocal+cantantes', '_blank');
-          };
-
           return (
             <div className="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 antialiased overflow-x-hidden min-h-screen pb-24">
               <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
@@ -753,7 +752,6 @@
                       </div>
                     ))}
                   </div>
-                  <button onClick={handleDeepLinkSearch} className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-500 hover:text-red-500 hover:border-red-500/50 hover:bg-red-500/5 transition-all active:scale-95 group mt-4"><span className="material-symbols-outlined group-hover:animate-bounce">video_library</span><span className="font-bold text-sm uppercase tracking-wider">Ver ejercicios en YouTube</span></button>
                 </section>
                 <section className="bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-3xl p-6 border border-primary/20">
                   <h2 className="text-lg font-black mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-primary">info</span> Tip Rápido</h2>

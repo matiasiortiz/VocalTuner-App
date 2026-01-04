@@ -298,8 +298,9 @@ class PianoAudioService {
         let noteDur = beatDuration * 0.5;
 
         // Construcción de la secuencia de notas
-        if (scaleId === 'Rossini') {
-            // Patrones de ejercicio ágil: solo ida, más rápido
+        if (scaleId === 'Rossini' || scaleId === 'Flamenca 8va Descendente') {
+            // Patrones de ejercicio ágil: solo ida
+            // Rossini y Flamenca 8va Descendente son ejecuciones rápidas (ej. semicorcheas relativo al pulso)
             noteDur = beatDuration * 0.25; 
             intervals.forEach(interval => {
                 const noteAbs = currentRootAbs + interval;

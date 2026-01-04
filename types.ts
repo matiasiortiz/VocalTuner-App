@@ -16,7 +16,7 @@ export interface VocalVideo {
   thumbnail: string;
 }
 
-export type ScaleType = 'Mayor' | 'Menor' | 'Pentatónica Mayor' | 'Pentatónica Menor' | 'Cromática' | 'Blues' | 'Flamenca';
+export type ScaleType = 'Mayor' | 'Menor' | 'Pentatónica Mayor' | 'Pentatónica Menor' | 'Cromática' | 'Blues' | 'Flamenca' | 'Flamenca 8va Descendente';
 export type DurationType = 'whole' | 'half' | 'quarter' | 'eighth';
 
 export interface SequenceNote {

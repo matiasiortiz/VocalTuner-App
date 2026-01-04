@@ -19,7 +19,8 @@ export const SCALE_INTERVALS: Record<string, number[]> = {
   
   // Modales y Variaciones
   'Dórica': [0, 2, 3, 5, 7, 9, 10, 12],
-  'Menor Armónica': [0, 2, 3, 5, 7, 8, 11, 12], // 7ma mayor (sensible)
+  'Flamenca': [0, 2, 3, 5, 7, 8, 11, 12], // Renamed from Menor Armónica
+  'Flamenca 8va Descendente': [0, 12, 11, 8, 7, 5, 3, 2, 0],
   'Aumentada': [0, 3, 4, 7, 8, 11, 12],
   
   // Arpegios
@@ -28,20 +29,12 @@ export const SCALE_INTERVALS: Record<string, number[]> = {
   'Arpegio Disminuido': [0, 3, 6, 9, 12],
 
   // Estilos y Agilidad
-  // Patrón Rossini (13 notas):
-  // UP: C(0)-E(4)-G(7)-C(12)-E(16)-G(19)
-  // DOWN: F(17)-D(14)-B(11)-G(7)-F(5)-D(2)-C(0)
   'Rossini': [0, 4, 7, 12, 16, 19, 17, 14, 11, 7, 5, 2, 0],
-  
-  // Progresión por Terceras (Zig-Zag)
-  // 0-4 (Do-Mi), 2-5 (Re-Fa), 4-7 (Mi-Sol), 5-9 (Fa-La), 
-  // 7-11 (Sol-Si), 9-12 (La-Do), 11-14 (Si-Re), 12 (Do)
   'Progresión por Terceras': [0, 4, 2, 5, 4, 7, 5, 9, 7, 11, 9, 12, 11, 14, 12],
-
+  'Rossini Arpeggio': [0, 4, 7, 11, 12], 
   'Pentatónica Mayor': [0, 2, 4, 7, 9, 12],
   'Pentatónica Menor': [0, 3, 5, 7, 10, 12],
   'Blues': [0, 3, 5, 6, 7, 10, 12],
-  'Flamenca': [0, 1, 4, 5, 7, 8, 10, 12]
 };
 
 export const HEALTH_TIPS = [

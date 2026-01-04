@@ -5,11 +5,6 @@ import BottomNav from '../components/BottomNav';
 import { HEALTH_TIPS } from '../constants';
 
 const HealthScreen: React.FC = () => {
-  const handleDeepLinkSearch = () => {
-    // Abre la app de YouTube o el navegador con una búsqueda predefinida
-    window.open('https://www.youtube.com/results?search_query=ejercicios+salud+vocal+cantantes', '_blank');
-  };
-
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 antialiased overflow-x-hidden min-h-screen pb-24">
       <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
@@ -88,15 +83,6 @@ const HealthScreen: React.FC = () => {
               </div>
             ))}
           </div>
-
-          {/* External Search Button */}
-          <button 
-            onClick={handleDeepLinkSearch}
-            className="w-full h-14 rounded-2xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center gap-2 text-gray-500 hover:text-red-500 hover:border-red-500/50 hover:bg-red-500/5 transition-all active:scale-95 group mt-4"
-          >
-            <span className="material-symbols-outlined group-hover:animate-bounce">video_library</span>
-            <span className="font-bold text-sm uppercase tracking-wider">Ver ejercicios en YouTube</span>
-          </button>
         </section>
         
         {/* Tips Section Footer */}
