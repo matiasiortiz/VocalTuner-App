@@ -12,14 +12,6 @@ const HealthScreen: React.FC = () => {
           <Link to="/" className="flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
             <span className="material-symbols-outlined text-[28px]">arrow_back</span>
           </Link>
-          <div className="flex gap-3">
-            <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
-              <span className="material-symbols-outlined">favorite</span>
-            </button>
-            <button className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
-              <span className="material-symbols-outlined">share</span>
-            </button>
-          </div>
         </div>
         <h1 className="text-3xl font-black tracking-tight">Salud Vocal</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Consejos expertos y cuidado clínico para tu voz.</p>
