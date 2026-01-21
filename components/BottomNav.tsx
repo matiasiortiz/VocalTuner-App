@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface NavButtonProps {
   to: string;
@@ -19,24 +18,27 @@ const NavButton: React.FC<NavButtonProps> = ({ to, icon, label, active }) => (
   </Link>
 );
 
-interface BottomNavProps {
-  activeTab: 'home' | 'scales' | 'health' | 'metronome';
-}
+const BottomNav: React.FC = () => {
+  const location = useLocation();
+  const path = location.pathname;
 
-const BottomNav: React.FC<BottomNavProps> = ({ activeTab }) => (
-  <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 shadow-lg backdrop-blur-md bg-opacity-95">
-    <div className="max-w-screen-2xl mx-auto px-4">
-      <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
-        <NavButton to="/" icon="home" label="Inicio" active={activeTab === 'home'} />
-        <NavButton to="/scales" icon="library_music" label="Escalas" active={activeTab === 'scales'} />
-        <NavButton to="/health" icon="health_and_safety" label="Salud" active={activeTab === 'health'} />
-        <NavButton to="/metronome" icon="timer" label="Tempo" active={activeTab === 'metronome'} />
+  // Don't show nav on create/edit screens as they have their own bottom controls
+  if (path.includes('create-scale') || path.includes('edit-scale')) {
+    return null;
+  }
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 w-full bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 shadow-[0_-4px_20px_rgba(0,0,0,0.3)] backdrop-blur-md bg-opacity-95 z-[1000] pb-safe">
+      <div className="max-w-screen-2xl mx-auto px-4">
+        <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
+          <NavButton to="/" icon="home" label="Inicio" active={path === '/'} />
+          <NavButton to="/scales" icon="library_music" label="Escalas" active={path === '/scales'} />
+          <NavButton to="/metronome" icon="timer" label="Metrónomo" active={path === '/metronome'} />
+          <NavButton to="/health" icon="health_and_safety" label="Salud" active={path === '/health'} />
+        </div>
       </div>
-      <div className="h-1.5 flex justify-center pb-2">
-        <div className="w-32 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-      </div>
-    </div>
-  </nav>
-);
+    </nav>
+  );
+};
 
 export default BottomNav;

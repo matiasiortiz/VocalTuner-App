@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
 import { HEALTH_TIPS } from '../constants';
+import BottomNav from '../components/BottomNav';
 
 const HealthScreen: React.FC = () => {
   return (
@@ -21,7 +21,7 @@ const HealthScreen: React.FC = () => {
 
       <main className="max-w-screen-2xl mx-auto px-6 lg:px-12 pt-8 space-y-12">
         
-        {/* Intro Banner: Side-by-side on large screens */}
+        {/* Intro Banner */}
         <section className="bg-surface-light dark:bg-surface-dark p-8 rounded-[40px] border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden relative">
           <div className="flex flex-col lg:flex-row items-center gap-8 relative z-10">
             <div className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary shrink-0 rotate-3 border-2 border-primary/20">
@@ -34,11 +34,10 @@ const HealthScreen: React.FC = () => {
               </p>
             </div>
           </div>
-          {/* Decorative element */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
         </section>
 
-        {/* Health Tips List: Grid Layout */}
+        {/* Health Tips List */}
         <section className="space-y-8">
           <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4">
             <h2 className="text-2xl font-black flex items-center gap-3">
@@ -96,8 +95,7 @@ const HealthScreen: React.FC = () => {
           </div>
         </section>
       </main>
-
-      <BottomNav activeTab="health" />
+      <BottomNav />
     </div>
   );
 };
