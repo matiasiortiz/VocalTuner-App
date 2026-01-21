@@ -135,96 +135,101 @@ const CreateScaleScreen: React.FC = () => {
   ];
 
   return (
-    <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
-      <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5">
-        <button 
-          type="button"
-          onClick={() => navigate('/scales')}
-          className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer"
-          aria-label="Cerrar"
-        >
-          <span className="material-symbols-outlined text-[36px] pointer-events-none">close</span>
-        </button>
-        <h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1>
-        <button 
-          type="button"
-          onClick={handleSave}
-          className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer"
-        >
-          {id ? 'Listo' : 'Guardar'}</button>
-      </header>
+    <div className="relative flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[#0b0f17] shadow-2xl text-white font-display">
+      
+      {/* SECTION 1: Config & List (Right on Desktop, Top on Mobile) */}
+      <div className="flex-1 flex flex-col h-full order-1 md:order-2 overflow-hidden relative z-10 md:border-l md:border-gray-800">
+        <header className="flex items-center justify-between p-4 shrink-0 bg-[#0b0f17] border-b border-white/5">
+            <button 
+            type="button"
+            onClick={() => navigate('/scales')}
+            className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer"
+            aria-label="Cerrar"
+            >
+            <span className="material-symbols-outlined text-[36px] pointer-events-none">close</span>
+            </button>
+            <h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1>
+            <button 
+            type="button"
+            onClick={handleSave}
+            className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer"
+            >
+            {id ? 'Listo' : 'Guardar'}</button>
+        </header>
 
-      {/* Increased bottom padding to 420px to clear the elevated piano */}
-      <main className="flex-1 overflow-y-auto no-scrollbar pb-[420px] px-5 pt-6 relative z-10">
-        <div className="mb-6">
-          <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
-          <input 
-            value={scaleName}
-            onChange={(e) => setScaleName(e.target.value)}
-            className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
-            placeholder="Ej. Mi Escala..." 
-          />
-        </div>
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-[450px] md:pb-24 px-5 pt-6">
+            <div className="mb-6">
+            <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
+            <input 
+                value={scaleName}
+                onChange={(e) => setScaleName(e.target.value)}
+                className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" 
+                placeholder="Ej. Mi Escala..." 
+            />
+            </div>
 
-        <div className="mb-8">
-          <span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span>
-          <div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">
-            {(['whole', 'half', 'quarter', 'eighth'] as DurationType[]).map((dur) => (
-              <button 
-                key={dur}
-                type="button"
-                onClick={() => setSelectedDuration(dur)}
-                className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}
-              >
-                {durationLabels[dur]}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="mb-8">
+            <span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span>
+            <div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">
+                {(['whole', 'half', 'quarter', 'eighth'] as DurationType[]).map((dur) => (
+                <button 
+                    key={dur}
+                    type="button"
+                    onClick={() => setSelectedDuration(dur)}
+                    className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}
+                >
+                    {durationLabels[dur]}
+                </button>
+                ))}
+            </div>
+            </div>
 
-        <div className="mb-2 flex items-center justify-between relative z-[100]">
-          <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>
-            {sequence.length > 0 && (
-              <button 
-                type="button" 
-                onClick={requestClear} 
-                className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all"
-              >
-                Limpiar
-              </button>
-            )}
-          </div>
-        </div>
+            <div className="mb-2 flex items-center justify-between relative z-[100]">
+            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
+            <div className="flex items-center gap-3">
+                <span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>
+                {sequence.length > 0 && (
+                <button 
+                    type="button" 
+                    onClick={requestClear} 
+                    className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all"
+                >
+                    Limpiar
+                </button>
+                )}
+            </div>
+            </div>
 
-        <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4">
-          <div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">
-            {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}
-          </div>
-          <div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">
-            {sequence.length === 0 ? (
-              <div className="w-full text-center flex flex-col items-center gap-2 opacity-30">
-                <span className="material-symbols-outlined text-4xl">music_note</span>
-                <span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span>
-              </div>
-            ) : (
-              sequence.map((item, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-3 shrink-0">
-                  <div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}>
-                    <span className="text-sm font-black text-white">{item.note}</span>
-                  </div>
-                  <span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span>
+            <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4">
+            <div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">
+                {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}
+            </div>
+            <div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">
+                {sequence.length === 0 ? (
+                <div className="w-full text-center flex flex-col items-center gap-2 opacity-30">
+                    <span className="material-symbols-outlined text-4xl">music_note</span>
+                    <span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
-      </main>
+                ) : (
+                sequence.map((item, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-3 shrink-0">
+                    <div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}>
+                        <span className="text-sm font-black text-white">{item.note}</span>
+                    </div>
+                    <span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span>
+                    </div>
+                ))
+                )}
+            </div>
+            </div>
+        </main>
+      </div>
 
-      {/* Piano controls moved up to bottom-16 (approx 64px/4rem) to sit above the Nav */}
-      <div className="absolute bottom-16 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
-        <div className="flex items-center justify-between px-4 py-4 gap-2">
+      {/* SECTION 2: Piano & Controls (Left on Desktop, Bottom on Mobile) */}
+      <div className="absolute bottom-16 w-full md:static md:w-5/12 lg:w-4/12 md:bottom-auto md:h-full bg-[#151921] border-t md:border-t-0 md:border-r border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] md:shadow-none z-30 flex flex-col order-2 md:order-1 pointer-events-auto justify-end md:justify-center">
+        
+        {/* Controls Bar */}
+        <div className="flex items-center justify-between px-4 py-4 gap-2 md:mb-4">
           <button 
             type="button"
             onClick={playSequence} 
@@ -270,7 +275,8 @@ const CreateScaleScreen: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
+        {/* Piano Keys */}
+        <div className="relative h-64 md:h-80 w-full select-none bg-[#101622] flex border-t border-white/5">
           {whiteKeys.map((note) => (
             <div 
               key={note} 
