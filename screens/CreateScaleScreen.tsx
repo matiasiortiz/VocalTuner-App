@@ -135,7 +135,7 @@ const CreateScaleScreen: React.FC = () => {
   ];
 
   return (
-    <div className="relative flex h-screen w-full flex-col md:flex-row overflow-hidden bg-[#0b0f17] shadow-2xl text-white font-display">
+    <div className="relative flex h-[100dvh] w-full flex-col md:flex-row overflow-hidden bg-[#0b0f17] shadow-2xl text-white font-display">
       
       {/* SECTION 1: Config & List (Right on Desktop, Top on Mobile) */}
       <div className="flex-1 flex flex-col h-full order-1 md:order-2 overflow-hidden relative z-10 md:border-l md:border-gray-800">
@@ -300,7 +300,10 @@ const CreateScaleScreen: React.FC = () => {
         </div>
       </div>
 
-      <BottomNav activeTab="scales" />
+      {/* Force z-index to ensure visibility over the absolute piano panel */}
+      <div className="relative z-[1000]">
+        <BottomNav activeTab="scales" />
+      </div>
 
       {showClearModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">

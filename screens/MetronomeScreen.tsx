@@ -108,15 +108,15 @@ const MetronomeScreen: React.FC = () => {
       <main className="flex-1 w-full px-6 max-w-screen-2xl mx-auto pb-24 landscape:pb-4 md:pb-4 relative z-10 overflow-y-auto scrollbar-hide">
         
         {/* Container: Vertical Stack on Mobile Portrait, Row on Landscape/Desktop */}
-        <div className="flex flex-col landscape:flex-row md:flex-row items-center justify-around landscape:justify-center md:justify-center gap-8 landscape:gap-16 md:gap-16 w-full min-h-full py-2">
+        <div className="flex flex-col landscape:flex-row md:flex-row items-center justify-around landscape:justify-center md:justify-center gap-8 landscape:gap-12 md:gap-16 w-full min-h-full py-2">
           
           {/* LEFT COLUMN: Visual Pendulum */}
-          {/* Dynamic Size: uses VW in portrait for width fit, VH in landscape for height fit. Adjusted smaller for short screens */}
+          {/* Dynamic Size: Reduced in landscape to avoid cutting off. Max heights added. */}
           <div className="relative flex items-center justify-center shrink-0">
             <svg className="
               rotate-[-90deg]
               w-[70vw] h-[70vw] max-w-[280px] max-h-[280px]
-              landscape:w-[45vh] landscape:h-[45vh] landscape:max-w-[350px] landscape:max-h-[350px]
+              landscape:w-[35vh] landscape:h-[35vh] landscape:max-w-[280px] landscape:max-h-[280px]
               md:w-[340px] md:h-[340px] lg:w-[420px] lg:h-[420px]
               transition-all duration-300
             ">
@@ -148,10 +148,10 @@ const MetronomeScreen: React.FC = () => {
               absolute inset-0 m-auto rounded-full bg-[#111622] border-[4px] border-[#1a2333] shadow-[0_0_60px_rgba(0,0,0,0.7)] 
               flex flex-col items-center justify-center z-10
               w-[62vw] h-[62vw] max-w-[250px] max-h-[250px]
-              landscape:w-[38vh] landscape:h-[38vh] landscape:max-w-[300px] landscape:max-h-[300px]
+              landscape:w-[30vh] landscape:h-[30vh] landscape:max-w-[240px] landscape:max-h-[240px]
               md:w-[300px] md:h-[300px] lg:w-[370px] lg:h-[370px]
             ">
-              <h1 className="text-6xl landscape:text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none mb-1 drop-shadow-lg transition-all">
+              <h1 className="text-6xl landscape:text-5xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-none mb-1 drop-shadow-lg transition-all">
                 {bpm}
               </h1>
               <p className="text-primary font-black text-[9px] landscape:text-[9px] md:text-xs tracking-[0.3em] uppercase opacity-90 text-center px-4">
@@ -175,7 +175,7 @@ const MetronomeScreen: React.FC = () => {
           </div>
 
           {/* RIGHT COLUMN: Controls Panel */}
-          <div className="flex flex-col w-full max-w-md gap-6 landscape:gap-4 md:gap-8 justify-center landscape:items-stretch">
+          <div className="flex flex-col w-full max-w-md gap-6 landscape:gap-3 md:gap-8 justify-center landscape:items-stretch">
             
             {/* Slider & Nomenclature */}
             <div className="space-y-4 bg-[#111622]/50 p-4 rounded-3xl border border-white/5 landscape:border-0 landscape:bg-transparent landscape:p-0">
@@ -230,9 +230,9 @@ const MetronomeScreen: React.FC = () => {
             <div className="flex justify-center pt-2">
               <button 
                 onClick={() => setIsPlaying(!isPlaying)}
-                className={`size-20 landscape:size-16 md:size-24 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl ${isPlaying ? 'bg-white text-black' : 'bg-primary text-white shadow-primary/40'}`}
+                className={`size-20 landscape:size-14 md:size-24 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl ${isPlaying ? 'bg-white text-black' : 'bg-primary text-white shadow-primary/40'}`}
               >
-                <span className="material-symbols-outlined text-[40px] landscape:text-[32px] md:text-[48px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
+                <span className="material-symbols-outlined text-[40px] landscape:text-[28px] md:text-[48px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span>
               </button>
             </div>
           </div>
