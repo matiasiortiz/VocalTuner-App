@@ -192,6 +192,7 @@ class PianoAudioService {
 
   private async playChord(rootNoteAbsIndex: number, scaleId: string, duration: number, runId: number) {
     if (this.currentPlaybackId !== runId) return;
+    if (!this.ctx) return;
     
     let intervals = [0, 4, 7]; // Mayor por defecto
     const lowerId = scaleId.toLowerCase();
@@ -211,13 +212,13 @@ class PianoAudioService {
         notesToPlay.push(`${note}${octave}`);
     });
 
-    const startTime = this.ctx!.currentTime;
+    const startTime = this.ctx.currentTime;
     
     notesToPlay.forEach(noteName => {
         const fileName = this.mapNoteToFileName(noteName);
         const buffer = this.buffers[fileName];
         if (buffer) {
-            this.playBufferAt(buffer, startTime, duration, 1.2); 
+            this.playBufferAt(buffer, startTime, duration, 0.8); 
         } else {
             const freq = this.getNoteFrequencyFromFullString(noteName);
             this.playSynthToneAt(freq, startTime, duration);
@@ -344,43 +345,56 @@ class PianoAudioService {
 
     const runId = ++this.currentPlaybackId;
     const beatDuration = 60 / bpm;
-    const noteDuration = beatDuration;
+    
+    // Configuración de duración y ritmo por tipo de escala
+    let noteDuration = beatDuration * 0.5; // Corcheas por defecto
+    if (scaleId === 'Rossini' || scaleId === 'Flamenca 8va Descendente') {
+        noteDuration = beatDuration * 0.25; // Semicorcheas
+    }
 
     const rootIndex = NOTES.indexOf(rootNote);
     const startAbsolute = (startOctave * 12) + rootIndex;
     const endAbsolute = (endOctave * 12) + rootIndex;
 
-    // Preload
+    const actStart = Math.min(startAbsolute, endAbsolute);
+    const actEnd = Math.max(startAbsolute, endAbsolute);
+
+    // Preload extendido para acordes y notas agudas
     const preloadList: string[] = [];
-    let tempRoot = startAbsolute;
-    while (tempRoot <= endAbsolute) {
-        intervals.forEach(interval => {
-            const noteAbs = tempRoot + interval;
-            preloadList.push(`${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`);
-        });
-        tempRoot++;
+    for (let i = actStart; i <= actEnd + 24; i++) {
+        preloadList.push(`${NOTES[i % 12]}${Math.floor(i / 12)}`);
     }
     await this.preloadNotes(preloadList);
 
-    let currentRootAbs = startAbsolute;
-    const PAUSE_DURATION = beatDuration * 2; 
+    let currentRootAbs = actStart;
 
-    while (currentRootAbs <= endAbsolute) {
+    while (currentRootAbs <= actEnd) {
         if (this.currentPlaybackId !== runId) return;
-        
-        if (isMetronomeOn) {
-            this.playClickAt(this.ctx.currentTime);
+
+        // Construcción de la secuencia (Ida y Vuelta para ejercicios vocales)
+        let sequenceIndices: number[] = [];
+        // Si el intervalo ya define una melodía compleja (ej. Rossini), la usamos tal cual
+        if (scaleId === 'Rossini' || scaleId === 'Flamenca 8va Descendente' || scaleId === 'Progresión por Terceras') {
+             sequenceIndices = intervals.map(i => currentRootAbs + i);
+        } else {
+             // Para escalas estándar, hacemos subida y bajada
+             const ascending = intervals.map(i => currentRootAbs + i);
+             sequenceIndices = [...ascending, ...[...ascending].reverse().slice(1)];
         }
 
-        for (let i = 0; i < intervals.length; i++) {
+        // Reproducir notas
+        for (let i = 0; i < sequenceIndices.length; i++) {
              if (this.currentPlaybackId !== runId) return;
              
-             const interval = intervals[i];
-             const noteAbs = currentRootAbs + interval;
+             const noteAbs = sequenceIndices[i];
              const fullNoteName = `${NOTES[noteAbs % 12]}${Math.floor(noteAbs / 12)}`;
              
              const startTime = this.ctx.currentTime;
              const fileName = this.mapNoteToFileName(fullNoteName);
+             
+             if (isMetronomeOn && i % 4 === 0) {
+                this.playClickAt(startTime);
+             }
 
              if (this.buffers[fileName]) {
                  this.playBufferAt(this.buffers[fileName], startTime, noteDuration, 2.0);
@@ -393,7 +407,26 @@ class PianoAudioService {
         }
 
         if (this.currentPlaybackId !== runId) return;
-        await this.wait(PAUSE_DURATION);
+        
+        // Pausa breve antes del acorde (AUMENTADA)
+        await this.wait(beatDuration * 1.2);
+
+        // --- ACORDES ---
+        
+        // 1. Acorde de Tónica actual
+        if (isMetronomeOn) this.playClickAt(this.ctx.currentTime);
+        await this.playChord(currentRootAbs, scaleId, beatDuration * 1.5, runId);
+        await this.wait(beatDuration * 1.3); // AJUSTADO A 1.3
+
+        if (this.currentPlaybackId !== runId) return;
+
+        // 2. Acorde de Modulación (Siguiente semitono) si no es el último
+        if (currentRootAbs < actEnd) {
+             const nextRoot = currentRootAbs + 1;
+             await this.playChord(nextRoot, scaleId, beatDuration * 1.5, runId);
+             await this.wait(beatDuration * 1.5);
+        }
+
         currentRootAbs++;
     }
   }
