@@ -10,7 +10,7 @@ import CreateScaleScreen from './screens/CreateScaleScreen';
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="max-w-md mx-auto bg-background-light dark:bg-background-dark min-h-screen shadow-2xl overflow-hidden relative border-x border-gray-200 dark:border-gray-800">
+      <div className="w-full max-w-screen-2xl mx-auto bg-background-light dark:bg-background-dark min-h-screen shadow-2xl overflow-hidden relative border-x border-gray-200 dark:border-gray-800">
         <Routes>
           <Route path="/" element={<HomeScreen />} />
           <Route path="/metronome" element={<MetronomeScreen />} />

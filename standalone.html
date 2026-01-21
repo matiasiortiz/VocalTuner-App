@@ -47,8 +47,31 @@
     </script>
     <style>
         body { background-color: #101622; overflow-x: hidden; user-select: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* Desktop Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b4354;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #135bec;
+        }
+
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .custom-scrollbar-h {
+            scrollbar-width: thin;
+            scrollbar-color: #3b4354 transparent;
+        }
+
         .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
         input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #135bec; cursor: pointer; margin-top: -10px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
@@ -62,13 +85,13 @@
         const { useState, useEffect, useRef } = React;
         const { HashRouter, Routes, Route, Link, useNavigate, useParams } = ReactRouterDOM;
 
-        // ... [CONSTANTS and AUDIO SERVICE are identical to previous version, omitted for brevity but assumed present] ...
-        // START CONSTANTS
+        // --- CONSTANTS ---
         const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-        const NOTE_FREQUENCIES = { "C1": 32.70, "C#1": 34.65, "D1": 36.71, "D#1": 38.89, "E1": 41.20, "F1": 43.65, "F#1": 46.25, "G1": 49.00, "G#1": 51.91, "A1": 55.00, "A#1": 58.27, "B1": 61.74, "C2": 65.41, "C#2": 69.30, "D2": 73.42, "D#2": 77.78, "E2": 82.41, "F2": 87.31, "F#2": 92.50, "G2": 98.00, "G#2": 103.83, "A2": 110.00, "A#2": 116.54, "B2": 123.47, "C3": 130.81, "C#3": 138.59, "D3": 146.83, "D#3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185.00, "G3": 196.00, "G#3": 207.65, "A3": 220.00, "A#3": 233.08, "B3": 246.94, "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392.00, "G#4": 415.30, "A4": 440.00, "A#4": 466.16, "B4": 493.88, "C5": 523.25, "C#5": 554.37, "D5": 587.33, "D#5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "G#5": 830.61, "A5": 880.00, "A#5": 932.33, "B5": 987.77, "C6": 1046.50, "C#6": 1108.73, "D6": 1174.66, "D#6": 1244.51, "E6": 1318.51, "F6": 1396.91, "F#6": 1479.98, "G6": 1567.98, "G#6": 1661.22, "A6": 1760.00, "A#6": 1864.66, "B6": 1975.53 };
+        const NOTE_FREQUENCIES = { "C1": 32.7, "C#1": 34.65, "D1": 36.71, "D#1": 38.89, "E1": 41.2, "F1": 43.65, "F#1": 46.25, "G1": 49, "G#1": 51.91, "A1": 55, "A#1": 58.27, "B1": 61.74, "C2": 65.41, "C#2": 69.3, "D2": 73.42, "D#2": 77.78, "E2": 82.41, "F2": 87.31, "F#2": 92.5, "G2": 98, "G#2": 103.83, "A2": 110, "A#2": 116.54, "B2": 123.47, "C3": 130.81, "C#3": 138.59, "D3": 146.83, "D#3": 155.56, "E3": 164.81, "F3": 174.61, "F#3": 185, "G3": 196, "G#3": 207.65, "A3": 220, "A#3": 233.08, "B3": 246.94, "C4": 261.63, "C#4": 277.18, "D4": 293.66, "D#4": 311.13, "E4": 329.63, "F4": 349.23, "F#4": 369.99, "G4": 392, "G#4": 415.3, "A4": 440, "A#4": 466.16, "B4": 493.88, "C5": 523.25, "C#5": 554.37, "D5": 587.33, "D#5": 622.25, "E5": 659.25, "F5": 698.46, "F#5": 739.99, "G5": 783.99, "G#5": 830.61, "A5": 880, "A#5": 932.33, "B5": 987.77, "C6": 1046.5, "C#6": 1108.73, "D6": 1174.66, "D#6": 1244.51, "E6": 1318.51, "F6": 1396.91, "F#6": 1479.98, "G6": 1567.98, "G#6": 1661.22, "A6": 1760, "A#6": 1864.66, "B6": 1975.53 };
         const SCALE_INTERVALS = { 'Mayor': [0, 2, 4, 5, 7, 9, 11, 12], 'Menor Natural': [0, 2, 3, 5, 7, 8, 10, 12], 'Menor': [0, 2, 3, 5, 7, 8, 10, 12], 'Cromática': [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'Dórica': [0, 2, 3, 5, 7, 9, 10, 12], 'Flamenca': [0, 2, 3, 5, 7, 8, 11, 12], 'Flamenca 8va Descendente': [0, 12, 11, 8, 7, 5, 3, 2, 0], 'Aumentada': [0, 3, 4, 7, 8, 11, 12], 'Arpegio Mayor': [0, 4, 7, 12], 'Arpegio Menor': [0, 3, 7, 12], 'Arpegio Disminuido': [0, 3, 6, 9, 12], 'Rossini': [0, 4, 7, 12, 16, 19, 17, 14, 11, 7, 5, 2, 0], 'Progresión por Terceras': [0, 4, 2, 5, 4, 7, 5, 9, 7, 11, 9, 12, 11, 14, 12], 'Rossini Arpeggio': [0, 4, 7, 11, 12], 'Pentatónica Mayor': [0, 2, 4, 7, 9, 12], 'Pentatónica Menor': [0, 3, 5, 7, 10, 12], 'Blues': [0, 3, 5, 6, 7, 10, 12] };
         const HEALTH_TIPS = [{ id: 1, title: "Hidratación Inteligente", icon: "water_drop", content: "Las cuerdas vocales vibran mejor cuando están bien lubricadas. Bebe agua a lo largo del día...", source: "NIDCD", sourceUrl: "https://www.nidcd.nih.gov/" }, { id: 2, title: "Descanso Vocal", icon: "bedtime", content: "Si has cantado mucho, intenta periodos de 15-20 minutos de silencio...", source: "Duke Health", sourceUrl: "https://www.dukehealth.org/" }, { id: 3, title: "Evita el Carraspeo", icon: "do_not_touch", content: "Carraspear golpea violentamente las cuerdas vocales...", source: "Texas Voice Center", sourceUrl: "https://www.texasvoicecenter.com/" }, { id: 4, title: "Calentamiento", icon: "self_improvement", content: "Nunca cantes 'en frío'...", source: "British Voice Association", sourceUrl: "https://www.britishvoiceassociation.org.uk/" }, { id: 5, title: "Reflujo", icon: "restaurant", content: "El reflujo gastroesofágico puede quemar las cuerdas vocales...", source: "Cleveland Clinic", sourceUrl: "https://my.clevelandclinic.org/" }];
         
+        // --- AUDIO SERVICE ---
         class PianoAudioService {
             constructor() { this.ctx = null; this.buffers = {}; this.activeSources = []; this.currentPlaybackId = 0; this.noteMap = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" }; ['click', 'touchstart', 'touchend', 'keydown'].forEach(evt => document.addEventListener(evt, () => { this.initContext(); if (this.ctx && this.ctx.state !== 'running') this.ctx.resume(); }, { once: true })); }
             initContext() { if (!this.ctx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (AudioContext) { this.ctx = new AudioContext(); } } }
@@ -88,7 +111,6 @@
             async playScale(root, startOct, endOct, intervals, bpm = 100, useMetro = false, scaleId = 'Mayor', onStep) { this.stop(); this.initContext(); if (!this.ctx) return; const runId = ++this.currentPlaybackId; const beat = 60 / bpm; const rootIdx = NOTES.indexOf(root); const startAbs = (startOct * 12) + rootIdx; const endAbs = (endOct * 12) + rootIdx; const actStart = Math.min(startAbs, endAbs); const actEnd = Math.max(startAbs, endAbs); const preload = []; for (let i = actStart; i <= actEnd + 24; i++) preload.push(`${NOTES[i % 12]}${Math.floor(i / 12)}`); await this.preloadNotes(preload); let curr = actStart; while (curr <= actEnd) { if (this.currentPlaybackId !== runId) return; let seq = []; let noteDur = beat * 0.5; if (scaleId === 'Rossini' || scaleId === 'Flamenca 8va Descendente') { noteDur = beat * 0.25; intervals.forEach(i => seq.push(`${NOTES[(curr + i) % 12]}${Math.floor((curr + i) / 12)}`)); } else { const notes = intervals.map(i => `${NOTES[(curr + i) % 12]}${Math.floor((curr + i) / 12)}`); seq = [...notes, ...[...notes].reverse().slice(1)]; } for (let i = 0; i < seq.length; i++) { if (this.currentPlaybackId !== runId) return; const n = seq[i]; const st = this.ctx.currentTime; if (useMetro && i % 4 === 0) this.playClickAt(st); const f = this.mapNoteToFileName(n); if (this.buffers[f]) this.playBufferAt(this.buffers[f], st, noteDur); else this.playSynthToneAt(NOTE_FREQUENCIES[n] || 440, st, noteDur); if (onStep) onStep(i, seq.length); await this.wait(noteDur); } if (this.currentPlaybackId !== runId) return; await this.wait(1.0); if (useMetro) this.playClickAt(this.ctx.currentTime); await this.playChord(curr, scaleId, 1.5, runId); await this.wait(1.0); if (this.currentPlaybackId !== runId) return; if (curr < actEnd) { const next = curr + 1; if (useMetro) this.playClickAt(this.ctx.currentTime); await this.playChord(next, scaleId, 1.5, runId); await this.wait(1.0); } curr++; } }
         }
         const audioService = new PianoAudioService();
-        // END AUDIO SERVICE
 
         // --- COMPONENTS ---
         const NavButton = ({ to, icon, label, active }) => (
@@ -97,22 +119,26 @@
                 <span className="text-[10px] font-bold tracking-tight">{label}</span>
             </Link>
         );
+
         const BottomNav = ({ activeTab }) => (
-            <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 max-w-md mx-auto px-4 shadow-lg backdrop-blur-md bg-opacity-95">
-                <div className="flex items-center justify-around h-16">
-                    <NavButton to="/" icon="home" label="Inicio" active={activeTab === 'home'} />
-                    <NavButton to="/scales" icon="library_music" label="Escalas" active={activeTab === 'scales'} />
-                    <NavButton to="/health" icon="health_and_safety" label="Salud" active={activeTab === 'health'} />
-                    <NavButton to="/metronome" icon="timer" label="Tempo" active={activeTab === 'metronome'} />
-                </div>
-                <div className="h-1.5 flex justify-center pb-2">
-                    <div className="w-32 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                </div>
-            </nav>
+          <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 shadow-lg backdrop-blur-md bg-opacity-95">
+            <div className="max-w-screen-2xl mx-auto px-4">
+              <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
+                <NavButton to="/" icon="home" label="Inicio" active={activeTab === 'home'} />
+                <NavButton to="/scales" icon="library_music" label="Escalas" active={activeTab === 'scales'} />
+                <NavButton to="/health" icon="health_and_safety" label="Salud" active={activeTab === 'health'} />
+                <NavButton to="/metronome" icon="timer" label="Tempo" active={activeTab === 'metronome'} />
+              </div>
+              <div className="h-1.5 flex justify-center pb-2">
+                <div className="w-32 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+              </div>
+            </div>
+          </nav>
         );
 
         // --- SCREENS ---
-        const HomeScreen = () => { /* ... existing HomeScreen code ... */ 
+
+        const HomeScreen = () => {
           const navigate = useNavigate();
           const [selectedScaleId, setSelectedScaleId] = useState("Mayor");
           const [selectedNote, setSelectedNote] = useState("D");
@@ -123,17 +149,20 @@
           const [isPlaying, setIsPlaying] = useState(false);
           const [isDarkMode, setIsDarkMode] = useState(true);
           const isProcessingRef = useRef(false);
+
           useEffect(() => {
             const theme = localStorage.getItem('theme') || 'dark';
             if (theme === 'dark') { document.documentElement.classList.add('dark'); setIsDarkMode(true); } 
             else { document.documentElement.classList.remove('dark'); setIsDarkMode(false); }
           }, []);
+
           const toggleDarkMode = () => {
             const next = !isDarkMode;
             setIsDarkMode(next);
             document.documentElement.classList.toggle('dark');
             localStorage.setItem('theme', next ? 'dark' : 'light');
           };
+
           const handleStart = async () => {
             if (isPlaying) { audioService.stop(); setIsPlaying(false); return; }
             if (isProcessingRef.current) return;
@@ -146,11 +175,13 @@
               setIsPlaying(false);
             } catch (error) { console.error("Error en reproducción:", error); setIsPlaying(false); } finally { isProcessingRef.current = false; }
           };
+
           const ScaleButton = ({ label }) => (
-            <button onClick={() => setSelectedScaleId(label)} className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg pl-5 pr-5 transition-all active:scale-95 border whitespace-nowrap ${selectedScaleId === label ? 'bg-primary text-white shadow-lg shadow-primary/20 border-transparent' : 'bg-surface-light dark:bg-surface-dark text-gray-700 dark:text-white border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+            <button onClick={() => setSelectedScaleId(label)} className={`flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-lg px-4 transition-all active:scale-95 border whitespace-nowrap ${selectedScaleId === label ? 'bg-primary text-white shadow-lg shadow-primary/20 border-transparent' : 'bg-surface-light dark:bg-surface-dark text-gray-700 dark:text-white border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
               <span className="text-sm font-semibold leading-normal">{label}</span>
             </button>
           );
+
           return (
             <div className="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden transition-colors duration-200">
               <div className="sticky top-0 z-20 flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between border-b border-gray-200 dark:border-gray-800 transition-colors duration-200">
@@ -159,86 +190,95 @@
                   <button onClick={toggleDarkMode} className="flex max-w-[48px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 bg-transparent text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined">{isDarkMode ? 'light_mode' : 'dark_mode'}</span></button>
                 </div>
               </div>
-              <div className="flex-1 flex flex-col px-4 pb-48 pt-2">
-                <div className="flex flex-col mb-6">
-                  <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-3 pt-4">Selecciona una escala</h2>
-                  <div className="flex flex-col gap-4">
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Escalas Básicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Mayor" /><ScaleButton label="Menor Natural" /><ScaleButton label="Cromática" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Modales y Variaciones</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Dórica" /><ScaleButton label="Flamenca" /><ScaleButton label="Flamenca 8va Descendente" /><ScaleButton label="Aumentada" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Arpegios</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Arpegio Mayor" /><ScaleButton label="Arpegio Menor" /><ScaleButton label="Arpegio Disminuido" /></div></div>
-                    <div><h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2 ml-1">Estilos y Pentatónicas</h3><div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 no-scrollbar"><ScaleButton label="Rossini" /><ScaleButton label="Progresión por Terceras" /><ScaleButton label="Rossini Arpeggio" /><ScaleButton label="Pentatónica Mayor" /><ScaleButton label="Pentatónica Menor" /><ScaleButton label="Blues" /></div></div>
-                  </div>
-                </div>
-                <div className="flex flex-col mb-6">
-                  <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-3 pt-2">Elige la nota</h2>
-                  <div className="grid grid-cols-4 gap-3 w-full">
-                    {NOTES.map((note) => (
-                      <button key={note} onClick={() => { setSelectedNote(note); audioService.playNote(`${note}${startOctave}`, 0.3); }} className={`flex cursor-pointer items-center justify-center rounded-xl h-14 text-lg font-bold leading-normal transition-all active:scale-95 ${selectedNote === note ? 'bg-primary text-white shadow-lg shadow-primary/25 ring-2 ring-primary ring-offset-2 ring-offset-background-light dark:ring-offset-background-dark' : 'bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:border-primary/50'}`}>
-                        {note}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex flex-col mb-6">
-                  <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-3 pt-2">Configuración de Escala</h2>
-                  <div className="grid grid-cols-2 gap-4">
+
+              <div className="flex-1 px-4 lg:px-8 pb-48 pt-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-screen-xl mx-auto">
+                  <div className="flex flex-col gap-6">
                     <div className="flex flex-col">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Octava Inicial</label>
-                      <div className="relative">
-                        <select value={startOctave} onChange={(e) => setStartOctave(Number(e.target.value))} className="w-full h-12 rounded-xl bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-base font-bold px-4 appearance-none outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
-                          {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}</option>))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
+                      <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-4">Selecciona una escala</h2>
+                      <div className="flex flex-col gap-6">
+                        {[{ title: "Escalas Básicas", list: ["Mayor", "Menor Natural", "Cromática"] }, { title: "Modales y Variaciones", list: ["Dórica", "Flamenca", "Flamenca 8va Descendente", "Aumentada"] }, { title: "Arpegios", list: ["Arpegio Mayor", "Arpegio Menor", "Arpegio Disminuido"] }, { title: "Estilos y Pentatónicas", list: ["Rossini", "Progresión por Terceras", "Rossini Arpeggio", "Pentatónica Mayor", "Pentatónica Menor", "Blues"] }].map((group) => (
+                          <div key={group.title} className="space-y-3">
+                            <h3 className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider ml-1 border-l-2 border-primary pl-2">{group.title}</h3>
+                            <div className="flex flex-wrap gap-2 md:gap-3 custom-scrollbar-h overflow-x-auto md:overflow-visible pb-2">
+                              {group.list.map(label => <ScaleButton key={label} label={label} />)}
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                     <div className="flex flex-col">
-                      <label className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Octava Final</label>
-                      <div className="relative">
-                        <select value={endOctave} onChange={(e) => setEndOctave(Number(e.target.value))} className="w-full h-12 rounded-xl bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-base font-bold px-4 appearance-none outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
-                          {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}</option>))}
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
+                      <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-4">Elige la nota</h2>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-12 lg:grid-cols-6 gap-3 w-full">
+                        {NOTES.map((note) => (
+                          <button key={note} onClick={() => { setSelectedNote(note); audioService.playNote(`${note}${startOctave}`, 0.3); }} className={`flex cursor-pointer items-center justify-center rounded-xl h-14 text-lg font-bold leading-normal transition-all active:scale-95 ${selectedNote === note ? 'bg-primary text-white shadow-lg shadow-primary/25 ring-2 ring-primary ring-offset-2 ring-offset-background-light dark:ring-offset-background-dark' : 'bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white hover:border-primary/50'}`}>
+                            {note}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="flex flex-col mb-6">
-                  <div className="w-full bg-surface-light dark:bg-surface-dark rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-lg">timer</span></div>
-                        <h3 className="text-gray-900 dark:text-white font-bold text-lg">Metrónomo</h3>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={isMetronomeOn} onChange={() => setIsMetronomeOn(!isMetronomeOn)} />
-                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/20 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                      </label>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      <div className="flex justify-between items-center"><span className="text-sm font-medium text-gray-500 dark:text-gray-400">Velocidad</span><div className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-primary font-bold text-sm font-mono">{bpm} BPM</div></div>
-                      <div className="relative w-full h-6 flex items-center">
-                        <input type="range" min="40" max="240" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary focus:outline-none focus:ring-0 z-10" />
-                        <div className="absolute w-full flex justify-between px-1 pointer-events-none">{[...Array(5)].map((_, i) => <div key={i} className="h-1 w-0.5 bg-gray-300 dark:bg-gray-600"></div>)}</div>
-                      </div>
-                      <div className="flex justify-between text-[10px] text-gray-400 font-medium uppercase tracking-wider px-1"><span>Largo</span><span>Allegro</span><span>Presto</span></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-auto">
-                  <div className="w-full bg-gradient-to-r from-gray-100 to-gray-50 dark:from-gray-800 dark:to-gray-800/50 rounded-xl p-4 flex items-center justify-between border border-gray-200 dark:border-gray-700/50">
+                  <div className="flex flex-col gap-8">
                     <div className="flex flex-col">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Configuración actual</span>
-                      <span className="text-lg text-gray-900 dark:text-white font-bold">{selectedNote} {selectedScaleId} <span className="text-gray-400 dark:text-gray-500 font-normal mx-1">•</span> {startOctave}-{endOctave} <span className="text-gray-400 dark:text-gray-500 font-normal mx-1">•</span> {bpm}bpm</span>
+                      <h2 className="text-gray-900 dark:text-white tracking-light text-[22px] font-bold leading-tight text-left pb-4">Configuración de Escala</h2>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Octava Inicial</label>
+                          <div className="relative">
+                            <select value={startOctave} onChange={(e) => setStartOctave(Number(e.target.value))} className="w-full h-12 rounded-xl bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-base font-bold px-4 appearance-none outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
+                              {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}</option>))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <label className="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider mb-2">Octava Final</label>
+                          <div className="relative">
+                            <select value={endOctave} onChange={(e) => setEndOctave(Number(e.target.value))} className="w-full h-12 rounded-xl bg-surface-light dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white text-base font-bold px-4 appearance-none outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
+                              {[1, 2, 3, 4, 5, 6].map(num => (<option key={num} value={num}>{num}</option>))}
+                            </select>
+                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400"><span className="material-symbols-outlined">expand_more</span></div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary"><span className="material-symbols-outlined">music_note</span></div>
+                    <div className="w-full bg-surface-light dark:bg-surface-dark rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-xl">timer</span></div>
+                          <h3 className="text-gray-900 dark:text-white font-bold text-xl">Metrónomo</h3>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input type="checkbox" className="sr-only peer" checked={isMetronomeOn} onChange={() => setIsMetronomeOn(!isMetronomeOn)} />
+                          <div className="w-14 h-7 bg-gray-200 rounded-full peer peer-focus:ring-4 peer-focus:ring-primary/20 dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                        </label>
+                      </div>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-base font-medium text-gray-500 dark:text-gray-400">Velocidad de Ensayo</span>
+                          <div className="bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg text-primary font-bold text-lg font-mono tracking-wider border border-primary/20">{bpm} BPM</div>
+                        </div>
+                        <div className="relative w-full h-8 flex items-center">
+                          <input type="range" min="40" max="240" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-2.5 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary focus:outline-none focus:ring-0 z-10" />
+                        </div>
+                        <div className="flex justify-between text-[11px] text-gray-400 font-bold uppercase tracking-widest px-1"><span>Lento</span><span>Moderato</span><span>Rápido</span></div>
+                      </div>
+                    </div>
+                    <div className="w-full bg-gradient-to-br from-primary/10 to-blue-500/5 dark:from-primary/20 dark:to-transparent rounded-2xl p-6 border border-primary/20 flex items-center justify-between shadow-sm">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-xs text-gray-500 dark:text-slate-400 font-bold uppercase tracking-[0.2em]">Configuración Actual</span>
+                        <span className="text-xl text-gray-900 dark:text-white font-black tracking-tight">{selectedNote} {selectedScaleId} <span className="text-primary font-normal mx-2">|</span> {startOctave}-{endOctave} Oct<span className="text-primary font-normal mx-2">|</span> {bpm} BPM</span>
+                      </div>
+                      <div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30"><span className="material-symbols-outlined text-2xl">music_note</span></div>
+                    </div>
                   </div>
                 </div>
               </div>
               <div className="fixed bottom-[4.5rem] left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-                <div className="pointer-events-auto shadow-2xl rounded-full">
-                  <button onClick={handleStart} className={`min-w-[200px] px-8 h-14 rounded-full font-bold text-lg flex items-center justify-center gap-3 transition-all active:scale-[0.95] hover:scale-105 border-2 ${isPlaying ? 'bg-red-500 hover:bg-red-600 text-white border-red-400 shadow-[0_0_20px_rgba(239,68,68,0.4)]' : 'bg-primary hover:bg-blue-600 text-white border-blue-400 shadow-[0_0_20px_rgba(19,91,236,0.4)]'}`}>
-                    <span className={`material-symbols-outlined text-3xl ${isPlaying ? '' : 'filled'}`}>{isPlaying ? 'stop' : 'play_arrow'}</span>
-                    <span className="tracking-wide">{isPlaying ? 'Detener' : 'Comenzar'}</span>
+                <div className="pointer-events-auto shadow-2xl rounded-full overflow-hidden max-w-sm w-full mx-auto">
+                  <button onClick={handleStart} className={`w-full h-16 font-black text-xl flex items-center justify-center gap-4 transition-all active:scale-[0.97] hover:brightness-110 border-2 ${isPlaying ? 'bg-red-500 text-white border-red-400 shadow-[0_0_30px_rgba(239,68,68,0.5)]' : 'bg-primary text-white border-blue-400 shadow-[0_0_30px_rgba(19,91,236,0.5)]'}`}>
+                    <span className={`material-symbols-outlined text-4xl ${isPlaying ? '' : 'filled'}`}>{isPlaying ? 'stop' : 'play_circle'}</span>
+                    <span className="tracking-tight">{isPlaying ? 'Detener' : 'Comenzar Ensayo'}</span>
                   </button>
                 </div>
               </div>
@@ -247,7 +287,7 @@
           );
         };
 
-        const MetronomeScreen = () => { /* ... existing MetronomeScreen ... */ 
+        const MetronomeScreen = () => {
           const navigate = useNavigate();
           const [bpm, setBpm] = useState(120);
           const [isPlaying, setIsPlaying] = useState(false);
@@ -262,86 +302,87 @@
           const handleTap = () => { const now = Date.now(); const newTapTimes = [...tapTimes, now].slice(-4); setTapTimes(newTapTimes); if (newTapTimes.length >= 2) { const intervals = []; for (let i = 1; i < newTapTimes.length; i++) { intervals.push(newTapTimes[i] - newTapTimes[i - 1]); } const averageInterval = intervals.reduce((a, b) => a + b) / intervals.length; const newBpm = Math.round(60000 / averageInterval); if (newBpm >= 40 && newBpm <= 220) { setBpm(newBpm); } } };
           useEffect(() => { if (isPlaying) { const beatsInCompas = timeSignature === '4/4' ? 4 : timeSignature === '3/4' ? 3 : 6; const interval = (60 / bpm) * 1000; if (timerRef.current) clearInterval(timerRef.current); timerRef.current = window.setInterval(() => { setBeat(prev => (prev + 1) % beatsInCompas); playClick(); }, interval); } else { if (timerRef.current) clearInterval(timerRef.current); setBeat(0); } return () => { if (timerRef.current) clearInterval(timerRef.current); }; }, [isPlaying, bpm, beat, timeSignature, isMuted]);
           return (
-            <div className="bg-[#0b0f17] font-display antialiased text-white min-h-screen flex flex-col overflow-hidden relative pb-24 max-w-md mx-auto">
-              <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[50%] bg-gradient-to-b from-[#1a2542] to-transparent opacity-30 pointer-events-none"></div>
-              <header className="flex items-center justify-between p-6 z-10">
-                <button onClick={() => navigate(-1)} className="p-2 rounded-full active:bg-white/10 transition-colors"><span className="material-symbols-outlined text-[28px]">arrow_back</span></button>
-                <h2 className="text-xl font-bold tracking-tight">Metrónomo</h2>
-                <button onClick={() => setIsMuted(!isMuted)} className="p-2 rounded-full active:bg-white/10 transition-colors"><span className="material-symbols-outlined text-[28px]">{isMuted ? 'volume_off' : 'volume_up'}</span></button>
+            <div className="bg-[#0b0f17] font-display antialiased text-white min-h-screen flex flex-col overflow-x-hidden relative pb-24 w-full">
+              <div className="absolute top-[-10%] left-0 right-0 h-[50%] bg-gradient-to-b from-[#1a2542] to-transparent opacity-30 pointer-events-none"></div>
+              <header className="flex items-center justify-between p-6 z-10 max-w-screen-2xl mx-auto w-full">
+                <button onClick={() => navigate(-1)} className="p-3 rounded-2xl active:bg-white/10 transition-colors hover:bg-white/5"><span className="material-symbols-outlined text-[32px]">arrow_back</span></button>
+                <h2 className="text-2xl font-black tracking-tight uppercase">Master Tempo</h2>
+                <button onClick={() => setIsMuted(!isMuted)} className="p-3 rounded-2xl active:bg-white/10 transition-colors hover:bg-white/5"><span className="material-symbols-outlined text-[32px]">{isMuted ? 'volume_off' : 'volume_up'}</span></button>
               </header>
-              <main className="flex-1 flex flex-col items-center justify-center w-full px-8 gap-10 relative z-10 mt-[-20px]">
-                <div className="relative flex items-center justify-center w-full">
-                  <svg className="absolute w-[280px] h-[280px] rotate-[-90deg]">
-                    <circle cx="140" cy="140" r="125" fill="transparent" stroke="#1a2333" strokeWidth="8" />
-                    <circle cx="140" cy="140" r="125" fill="transparent" stroke="#135bec" strokeWidth="8" strokeDasharray="785" strokeDashoffset={isPlaying ? (785 - (785 * (beat + 1)) / (timeSignature === '4/4' ? 4 : timeSignature === '3/4' ? 3 : 6)) : 785} className="transition-all duration-150 ease-out" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 8px rgba(19, 91, 236, 0.6))' }} />
-                  </svg>
-                  <div className="size-60 rounded-full bg-[#111622] border-4 border-[#1a2333] shadow-[0_0_40px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center z-10 relative">
-                    <h1 className="text-8xl font-black tracking-tighter leading-none mb-2">{bpm}</h1>
-                    <p className="text-[#135bec] font-black text-xs tracking-[0.2em] uppercase">BPM</p>
-                    <button onClick={() => setBpm(b => Math.max(40, b - 1))} className="absolute left-[-55px] size-14 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-lg border border-white/5"><span className="material-symbols-outlined text-3xl">remove</span></button>
-                    <button onClick={() => setBpm(b => Math.min(220, b + 1))} className="absolute right-[-55px] size-14 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-lg border border-white/5"><span className="material-symbols-outlined text-3xl">add</span></button>
+              <main className="flex-1 flex flex-col items-center justify-center w-full px-8 max-w-screen-2xl mx-auto gap-12 relative z-10">
+                <div className="flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-24 w-full">
+                  <div className="relative flex items-center justify-center">
+                    <svg className="absolute w-[320px] h-[320px] lg:w-[400px] lg:h-[400px] rotate-[-90deg]">
+                      <circle cx="50%" cy="50%" r="45%" fill="transparent" stroke="#1a2333" strokeWidth="12" />
+                      <circle cx="50%" cy="50%" r="45%" fill="transparent" stroke="#135bec" strokeWidth="12" strokeDasharray="1000" strokeDashoffset={isPlaying ? (1000 - (1000 * (beat + 1)) / (timeSignature === '4/4' ? 4 : timeSignature === '3/4' ? 3 : 6)) : 1000} className="transition-all duration-150 ease-out" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 12px rgba(19, 91, 236, 0.8))' }} />
+                    </svg>
+                    <div className="size-64 lg:size-80 rounded-full bg-[#111622] border-[6px] border-[#1a2333] shadow-[0_0_60px_rgba(0,0,0,0.7)] flex flex-col items-center justify-center z-10 relative">
+                      <h1 className="text-9xl lg:text-[10rem] font-black tracking-tighter leading-none mb-3 drop-shadow-lg">{bpm}</h1>
+                      <p className="text-primary font-black text-sm tracking-[0.4em] uppercase opacity-80">Beats Per Minute</p>
+                      <button onClick={() => setBpm(b => Math.max(40, b - 1))} className="absolute left-[-40px] lg:left-[-60px] size-16 lg:size-20 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c]"><span className="material-symbols-outlined text-4xl">remove</span></button>
+                      <button onClick={() => setBpm(b => Math.min(220, b + 1))} className="absolute right-[-40px] lg:right-[-60px] size-16 lg:size-20 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c]"><span className="material-symbols-outlined text-4xl">add</span></button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col w-full max-w-md gap-10">
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between px-2">
+                        <span className="text-xs font-black text-gray-500 uppercase tracking-[0.3em]">Nomenclatura</span>
+                        <span className="text-xl font-black text-primary uppercase tracking-widest drop-shadow-sm">{getTempoName(bpm)}</span>
+                      </div>
+                      <div className="w-full px-2">
+                        <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-3 bg-[#1c2333] rounded-full appearance-none cursor-pointer accent-primary" style={{ background: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(220-40)*100}%, #1c2333 ${(bpm-40)/(220-40)*100}%, #1c2333 100%)` }} />
+                        <div className="flex justify-between mt-4 text-[11px] font-black text-gray-600 tracking-[0.2em] uppercase"><span>Adagio</span><span>Andante</span><span>Presto</span></div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 w-full h-20">
+                      <button onClick={handleTap} className="bg-[#111622] border-2 border-white/5 rounded-[28px] flex items-center justify-center gap-4 active:bg-[#1a2333] transition-all shadow-inner hover:border-primary/20"><span className="material-symbols-outlined text-primary text-3xl">back_hand</span><span className="text-sm font-black tracking-[0.2em]">TAP</span></button>
+                      <div className="bg-[#111622] border-2 border-white/5 rounded-[28px] flex items-center p-2 shadow-inner overflow-hidden">
+                        {['4/4', '3/4', '6/8'].map((sig) => (<button key={sig} onClick={() => setTimeSignature(sig)} className={`flex-1 h-full rounded-2xl text-[12px] font-black transition-all ${timeSignature === sig ? 'bg-primary text-white shadow-lg' : 'text-gray-500 hover:text-gray-300'}`}>{sig}</button>))}
+                      </div>
+                    </div>
+                    <div className="flex justify-center"><button onClick={() => setIsPlaying(!isPlaying)} className={`size-28 lg:size-32 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-2xl ${isPlaying ? 'bg-white text-black' : 'bg-primary text-white shadow-primary/30'}`}><span className="material-symbols-outlined text-[64px] filled">{isPlaying ? 'pause' : 'play_arrow'}</span></button></div>
                   </div>
                 </div>
-                <div className="w-full flex items-center justify-between px-2 mt-4">
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Tempo</span>
-                  <span className="text-sm font-bold text-[#135bec]">{getTempoName(bpm)}</span>
-                </div>
-                <div className="w-full">
-                  <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-1.5 bg-[#1c2333] rounded-lg appearance-none cursor-pointer accent-[#135bec]" style={{ background: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(220-40)*100}%, #1c2333 ${(bpm-40)/(220-40)*100}%, #1c2333 100%)` }} />
-                </div>
-                <div className="grid grid-cols-2 gap-4 w-full h-16">
-                  <button onClick={handleTap} className="bg-[#111622] border border-white/5 rounded-2xl flex items-center justify-center gap-3 active:bg-[#1a2333] transition-colors shadow-inner"><span className="material-symbols-outlined text-[#135bec]">back_hand</span><span className="text-sm font-black tracking-widest">TAP</span></button>
-                  <div className="bg-[#111622] border border-white/5 rounded-2xl flex items-center px-1 py-1 shadow-inner overflow-hidden">
-                    {['4/4', '3/4', '6/8'].map((sig) => (
-                      <button key={sig} onClick={() => setTimeSignature(sig)} className={`flex-1 h-full rounded-xl text-[11px] font-black transition-all ${timeSignature === sig ? 'bg-[#1c2333] text-[#135bec]' : 'text-gray-500'}`}>{sig}</button>
-                    ))}
-                  </div>
-                </div>
-                <button onClick={() => setIsPlaying(!isPlaying)} className={`size-24 rounded-full flex items-center justify-center transition-all active:scale-95 shadow-[0_0_30px_rgba(19,91,236,0.3)] ${isPlaying ? 'bg-white text-black' : 'bg-[#135bec] text-white'}`}><span className="material-symbols-outlined text-[48px] fill-1">{isPlaying ? 'pause' : 'play_arrow'}</span></button>
               </main>
               <BottomNav activeTab="metronome" />
             </div>
           );
         };
 
-        const HealthScreen = () => { /* ... existing HealthScreen ... */ 
+        const HealthScreen = () => {
           return (
             <div className="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 antialiased overflow-x-hidden min-h-screen pb-24">
               <header className="sticky top-0 z-50 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800 px-4 pt-4 pb-3">
-                <div className="flex items-center justify-between mb-4">
-                  <Link to="/" className="flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[28px]">arrow_back</span></Link>
-                </div>
-                <h1 className="text-3xl font-black tracking-tight">Salud Vocal</h1>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Consejos expertos y cuidado clínico para tu voz.</p>
-              </header>
-              <main className="px-4 pt-6 space-y-8">
-                <section className="bg-surface-light dark:bg-surface-dark p-6 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-lg">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-primary shrink-0"><span className="material-symbols-outlined text-2xl">medical_services</span></div>
-                    <div><h2 className="text-lg font-bold mb-1">Cuidado Profesional</h2><p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">Tu voz es un instrumento biológico. Aquí encontrarás pautas basadas en la medicina foniátrica para mantenerla sana y potente.</p></div>
+                <div className="max-w-screen-2xl mx-auto flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <Link to="/" className="flex items-center justify-center p-2 -ml-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"><span className="material-symbols-outlined text-[28px]">arrow_back</span></Link>
                   </div>
+                  <h1 className="text-3xl font-black tracking-tight">Salud Vocal</h1>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Guía profesional para el cuidado de tu instrumento biológico.</p>
+                </div>
+              </header>
+              <main className="max-w-screen-2xl mx-auto px-6 lg:px-12 pt-8 space-y-12">
+                <section className="bg-surface-light dark:bg-surface-dark p-8 rounded-[40px] border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden relative">
+                  <div className="flex flex-col lg:flex-row items-center gap-8 relative z-10">
+                    <div className="h-20 w-20 rounded-3xl bg-primary/10 flex items-center justify-center text-primary shrink-0 rotate-3 border-2 border-primary/20"><span className="material-symbols-outlined text-4xl">medical_services</span></div>
+                    <div className="text-center lg:text-left"><h2 className="text-2xl font-black mb-3">Cuidado Clínico & Profesional</h2><p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-2xl">Estas recomendaciones están basadas en prácticas de medicina foniátrica. Mantener hábitos saludables es tan importante como la técnica vocal para una carrera longeva.</p></div>
+                  </div>
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
                 </section>
-                <section className="space-y-6">
-                  <div className="flex items-center justify-between"><h2 className="text-xl font-black flex items-center gap-2"><span className="material-symbols-outlined text-green-500">verified</span>Consejos Certificados</h2></div>
-                  <div className="grid gap-5">
+                <section className="space-y-8">
+                  <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-4"><h2 className="text-2xl font-black flex items-center gap-3"><span className="material-symbols-outlined text-green-500 filled">verified</span>Pautas de Oro</h2></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {HEALTH_TIPS.map(tip => (
-                      <div key={tip.id} className="bg-white dark:bg-[#1c2333] p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-all">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary"><span className="material-symbols-outlined text-lg">{tip.icon}</span></div>
-                          <h3 className="text-base font-bold leading-tight">{tip.title}</h3>
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed mb-4">{tip.content}</p>
-                        <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
-                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Fuente</span>
-                          <a href={tip.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">{tip.source}<span className="material-symbols-outlined text-[14px]">open_in_new</span></a>
-                        </div>
+                      <div key={tip.id} className="bg-white dark:bg-[#1c2333] p-8 rounded-[32px] border border-gray-200 dark:border-gray-800 shadow-lg hover:shadow-2xl transition-all hover:-translate-y-1 flex flex-col h-full">
+                        <div className="flex items-center gap-4 mb-6"><div className="h-12 w-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20"><span className="material-symbols-outlined text-2xl">{tip.icon}</span></div><h3 className="text-xl font-black leading-tight tracking-tight">{tip.title}</h3></div>
+                        <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed mb-8 flex-1">{tip.content}</p>
+                        <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-6 mt-auto"><span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Fuente Médica</span><a href={tip.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs font-black text-primary hover:underline hover:brightness-125 transition-all">{tip.source}<span className="material-symbols-outlined text-sm">open_in_new</span></a></div>
                       </div>
                     ))}
                   </div>
                 </section>
-                <section className="bg-gradient-to-br from-primary/10 to-blue-500/10 rounded-3xl p-6 border border-primary/20">
-                  <h2 className="text-lg font-black mb-4 flex items-center gap-2"><span className="material-symbols-outlined text-primary">info</span> Tip Rápido</h2>
-                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">"Si tienes ronquera (disfonía) que dura más de 2 semanas sin un resfriado aparente, consulta inmediatamente a un otorrinolaringólogo."</p>
+                <section className="bg-gradient-to-br from-primary/10 to-blue-600/10 rounded-[40px] p-8 border-2 border-primary/20 mb-12">
+                  <div className="flex items-start gap-6"><div className="p-3 bg-white dark:bg-slate-900 rounded-2xl shadow-md"><span className="material-symbols-outlined text-primary text-3xl filled">info</span></div><div className="space-y-2"><h2 className="text-xl font-black tracking-tight">Dato Crucial</h2><p className="text-lg text-slate-700 dark:text-slate-200 leading-relaxed italic font-medium">"La disfonía persistente por más de 15 días requiere revisión diagnóstica por un otorrinolaringólogo especialista en laringe."</p></div></div>
                 </section>
               </main>
               <BottomNav activeTab="health" />
@@ -349,7 +390,7 @@
           );
         };
 
-        const ScalesScreen = () => { /* ... existing ScalesScreen ... */
+        const ScalesScreen = () => {
           const navigate = useNavigate();
           const [customScales, setCustomScales] = useState([]);
           const [playingId, setPlayingId] = useState(null);
@@ -366,28 +407,31 @@
           const confirmDelete = () => { if (!scaleToDelete) return; try { const saved = JSON.parse(localStorage.getItem('vocal_scales') || '[]'); const updated = saved.filter(s => s.id.toString() !== scaleToDelete.toString()); localStorage.setItem('vocal_scales', JSON.stringify(updated)); const formattedUpdated = updated.map(s => ({ ...s, id: s.id.toString() })); setCustomScales(formattedUpdated.sort((a, b) => b.createdAt - a.createdAt)); setScaleToDelete(null); } catch (err) { console.error("Error al eliminar escala:", err); } };
           const editScale = (e, id) => { e.preventDefault(); e.stopPropagation(); navigate(`/edit-scale/${id}`); };
           return (
-            <div className="bg-[#0b0f17] text-white min-h-screen pb-32 max-w-md mx-auto relative font-display">
-              <header className="px-6 pt-10 pb-6 border-b border-gray-800 relative z-[20]">
-                <h1 className="text-3xl font-bold tracking-tight">Biblioteca</h1>
-                <p className="text-gray-500 mt-1 italic text-sm">Gestiona tus escalas personalizadas aquí.</p>
+            <div className="bg-[#0b0f17] text-white min-h-screen pb-32 w-full relative font-display">
+              <header className="max-w-screen-2xl mx-auto px-6 lg:px-12 pt-10 pb-6 border-b border-gray-800 relative z-[20]">
+                <h1 className="text-3xl font-black tracking-tight">Biblioteca Vocal</h1>
+                <p className="text-gray-500 mt-2 font-medium">Gestiona y entrena con tus escalas personalizadas.</p>
               </header>
-              <div className="bg-[#111622] border-b border-gray-800 px-6 py-4 sticky top-0 z-[30] shadow-xl">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center justify-between"><h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Configuración de Reproducción</h3><div className="flex gap-2"><span className="text-[10px] bg-primary/20 text-primary px-2 py-1 rounded font-bold">{selectedNote}{startOctave}-{selectedNote}{endOctave}</span><span className="text-[10px] bg-gray-800 text-gray-300 px-2 py-1 rounded font-bold">{bpm} BPM</span></div></div>
-                  <div className="grid grid-cols-3 gap-2">
-                     <div className="relative"><select value={selectedNote} onChange={(e) => setSelectedNote(e.target.value)} className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary">{NOTES.map(n => <option key={n} value={n}>{n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
-                     <div className="relative"><select value={startOctave} onChange={(e) => setStartOctave(Number(e.target.value))} className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary">{[2, 3, 4, 5].map(n => <option key={n} value={n}>Oct {n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
-                     <div className="relative"><select value={endOctave} onChange={(e) => setEndOctave(Number(e.target.value))} className="w-full h-10 bg-[#1c2333] border border-gray-700 rounded-lg text-xs font-bold px-3 appearance-none outline-none focus:border-primary">{[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>Oct {n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
+              <div className="bg-[#111622] border-b border-gray-800 px-6 lg:px-12 py-6 sticky top-0 z-[30] shadow-2xl">
+                <div className="flex flex-col lg:flex-row gap-6 max-w-screen-2xl mx-auto items-center">
+                  <div className="flex flex-col gap-1 w-full lg:w-1/4">
+                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Configuración Maestro</h3>
+                     <div className="flex gap-3"><span className="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-lg font-black border border-primary/30 uppercase tracking-tighter">{selectedNote} {startOctave}-{endOctave} Oct</span><span className="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg font-black border border-gray-700 uppercase tracking-tighter">{bpm} BPM</span></div>
                   </div>
-                  <div className="flex flex-col gap-1 mt-1"><div className="flex justify-between items-center px-1"><span className="text-[10px] text-gray-500 font-bold uppercase">Velocidad</span></div><div className="relative w-full h-6 flex items-center"><input type="range" min="40" max="240" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-1.5 bg-[#1c2333] rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none z-10" style={{ backgroundImage: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(240-40)*100}%, #1c2333 ${(bpm-40)/(240-40)*100}%, #1c2333 100%)` }} /></div></div>
+                  <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full lg:flex-1">
+                     <div className="relative"><select value={selectedNote} onChange={(e) => setSelectedNote(e.target.value)} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">{NOTES.map(n => <option key={n} value={n}>{n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
+                     <div className="relative"><select value={startOctave} onChange={(e) => setStartOctave(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">{[2, 3, 4, 5].map(n => <option key={n} value={n}>Octava {n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
+                     <div className="relative"><select value={endOctave} onChange={(e) => setEndOctave(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">{[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>Octava {n}</option>)}</select><div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"><span className="material-symbols-outlined text-sm">expand_more</span></div></div>
+                     <div className="col-span-3 lg:col-span-1 flex items-center px-2"><input type="range" min="40" max="240" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-2 bg-[#1c2333] rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none z-10" style={{ backgroundImage: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(240-40)*100}%, #1c2333 ${(bpm-40)/(240-40)*100}%, #1c2333 100%)` }} /></div>
+                  </div>
                 </div>
               </div>
-              <main className="px-6 py-8 space-y-6 relative z-[10]">
-                <div className="flex items-center justify-between"><h2 className="text-lg font-bold flex items-center gap-2"><span className="material-symbols-outlined text-primary">auto_stories</span> Mis Escalas</h2><span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{customScales.length} escalas</span></div>
-                {customScales.length === 0 ? (<div className="py-24 flex flex-col items-center justify-center text-center bg-white/5 rounded-3xl border-2 border-dashed border-gray-800"><span className="material-symbols-outlined text-6xl mb-4 opacity-10">music_note</span><p className="text-sm font-bold text-gray-500 mb-6">Aún no tienes escalas personalizadas.</p><button type="button" onClick={() => navigate('/create-scale')} className="h-12 px-8 bg-primary text-white text-xs font-black rounded-xl shadow-glow uppercase tracking-widest active:scale-95">Crear Escala</button></div>) : (<div className="grid gap-4">{customScales.map(scale => (<div key={scale.id} className={`bg-[#1c2333] p-5 rounded-2xl border transition-all relative group overflow-hidden ${playingId === scale.id ? 'border-primary shadow-glow' : 'border-gray-800'}`}><div className="flex items-center justify-between relative z-10"><div onClick={(e) => playCustom(e, scale)} className="flex items-center gap-4 flex-1 min-w-0 pr-2 cursor-pointer group/info"><div className={`size-12 rounded-xl flex items-center justify-center transition-all shrink-0 ${playingId === scale.id ? 'bg-red-500 text-white shadow-lg shadow-red-500/40' : 'bg-primary/10 text-primary group-hover/info:bg-primary/20'}`}><span className="material-symbols-outlined text-2xl pointer-events-none">{playingId === scale.id ? 'stop' : 'play_arrow'}</span></div><div className="min-w-0"><h3 className={`font-bold text-base truncate pr-2 ${playingId === scale.id ? 'text-primary' : 'text-white'}`}>{scale.name}</h3><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">{scale.notes.length} notas en patrón</p></div></div><div className="flex items-center gap-2 shrink-0 relative z-[40]"><button type="button" onClick={(e) => editScale(e, scale.id)} className="size-10 rounded-full bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center transition-all active:scale-90 border border-blue-500/20 cursor-pointer" title="Editar"><span className="material-symbols-outlined text-xl pointer-events-none">edit</span></button><button type="button" onClick={(e) => requestDelete(e, scale.id)} className="size-10 rounded-full bg-red-500/10 text-red-500 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all active:scale-90 border border-red-500/20 cursor-pointer" title="Eliminar"><span className="material-symbols-outlined text-xl pointer-events-none">delete</span></button></div></div></div>))}</div>)}
+              <main className="px-6 lg:px-12 py-10 space-y-8 relative z-[10] max-w-screen-2xl mx-auto">
+                <div className="flex items-center justify-between"><h2 className="text-xl font-black flex items-center gap-3"><span className="material-symbols-outlined text-primary text-3xl">auto_stories</span>Mis Escalas Personalizadas</h2><span className="text-xs text-gray-500 font-black uppercase tracking-[0.2em] bg-gray-800/50 px-3 py-1 rounded-full">{customScales.length} Ítems</span></div>
+                {customScales.length === 0 ? (<div className="py-32 flex flex-col items-center justify-center text-center bg-white/[0.02] rounded-[40px] border-2 border-dashed border-gray-800"><span className="material-symbols-outlined text-7xl mb-6 opacity-20">music_off</span><p className="text-lg font-bold text-gray-400 mb-8 max-w-xs">Tu biblioteca está vacía. Comienza creando tu primera rutina vocal.</p><button type="button" onClick={() => navigate('/create-scale')} className="h-14 px-10 bg-primary text-white text-sm font-black rounded-2xl shadow-glow uppercase tracking-widest active:scale-95 transition-all hover:scale-105">Crear Nueva Escala</button></div>) : (<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">{customScales.map(scale => (<div key={scale.id} className={`bg-[#1c2333] p-6 rounded-[32px] border-2 transition-all relative group overflow-hidden ${playingId === scale.id ? 'border-primary shadow-glow ring-4 ring-primary/10' : 'border-gray-800 hover:border-gray-700'}`}><div className="flex flex-col gap-5 relative z-10"><div onClick={(e) => playCustom(e, scale)} className="flex items-center gap-4 cursor-pointer group/info"><div className={`size-14 rounded-2xl flex items-center justify-center transition-all shrink-0 ${playingId === scale.id ? 'bg-red-500 text-white shadow-xl shadow-red-500/30 rotate-3' : 'bg-primary/10 text-primary group-hover/info:bg-primary/20'}`}><span className="material-symbols-outlined text-3xl pointer-events-none">{playingId === scale.id ? 'stop' : 'play_arrow'}</span></div><div className="min-w-0"><h3 className={`font-black text-lg truncate leading-tight ${playingId === scale.id ? 'text-primary' : 'text-white'}`}>{scale.name}</h3><p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">{scale.notes.length} Pasos • Patrón Vocal</p></div></div><div className="flex items-center gap-3 pt-2 border-t border-white/[0.05]"><button type="button" onClick={(e) => editScale(e, scale.id)} className="flex-1 h-11 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white flex items-center justify-center gap-2 transition-all active:scale-90 font-bold text-sm border border-blue-500/20"><span className="material-symbols-outlined text-lg">edit</span>Editar</button><button type="button" onClick={(e) => requestDelete(e, scale.id)} className="size-11 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-600 hover:text-white flex items-center justify-center transition-all active:scale-90 border border-red-500/20"><span className="material-symbols-outlined text-xl">delete</span></button></div></div></div>))}</div>)}
               </main>
-              <button type="button" onClick={() => navigate('/create-scale')} className="fixed bottom-24 right-6 size-16 rounded-full bg-primary text-white shadow-glow flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-[110]"><span className="material-symbols-outlined text-3xl">add</span></button>
-              {scaleToDelete && (<div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"><div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200"><div className="flex flex-col items-center text-center gap-4"><div className="size-16 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-1 border border-red-500/20"><span className="material-symbols-outlined text-3xl">delete_forever</span></div><div><h3 className="text-xl font-bold mb-2 text-white">¿Eliminar Escala?</h3><p className="text-sm text-gray-400 leading-relaxed">¿Estás seguro de que quieres eliminar permanentemente esta escala?</p></div><div className="flex gap-3 w-full mt-3"><button onClick={() => setScaleToDelete(null)} className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Cancelar</button><button onClick={confirmDelete} className="flex-1 h-12 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/30 transition-all active:scale-95">Eliminar</button></div></div></div></div>)}
+              <button type="button" onClick={() => navigate('/create-scale')} className="fixed bottom-24 right-8 size-16 rounded-3xl bg-primary text-white shadow-glow flex items-center justify-center hover:scale-110 active:scale-90 transition-all z-[110] border-2 border-white/20"><span className="material-symbols-outlined text-4xl">add</span></button>
+              {scaleToDelete && (<div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300"><div className="bg-[#161c27] rounded-[40px] p-10 shadow-2xl max-w-sm w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200"><div className="flex flex-col items-center text-center gap-6"><div className="size-24 rounded-full bg-red-500/10 flex items-center justify-center text-red-500 mb-2 border-2 border-red-500/20"><span className="material-symbols-outlined text-5xl">delete_forever</span></div><div><h3 className="text-2xl font-black mb-3 text-white tracking-tight">¿Eliminar Escala?</h3><p className="text-gray-400 font-medium leading-relaxed">Esta acción es permanente. Perderás la secuencia configurada para este entrenamiento.</p></div><div className="flex flex-col gap-3 w-full mt-2"><button onClick={confirmDelete} className="w-full h-14 rounded-2xl font-black text-white bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/30 transition-all active:scale-95 uppercase tracking-widest text-xs">Confirmar Eliminación</button><button onClick={() => setScaleToDelete(null)} className="w-full h-14 rounded-2xl font-bold text-gray-400 hover:text-white transition-colors">Cancelar</button></div></div></div></div>)}
               <BottomNav activeTab="scales" />
             </div>
           );
@@ -401,7 +445,6 @@
           const [sequence, setSequence] = useState([]);
           const [showClearModal, setShowClearModal] = useState(false);
           const [currentOctave, setCurrentOctave] = useState(4);
-
           useEffect(() => {
             if (id) {
               try {
@@ -411,34 +454,16 @@
               } catch (e) { console.error("Error loading scale to edit", e); navigate('/scales'); }
             }
           }, [id, navigate]);
-          const addNote = (note) => {
-            const newItem = { note, duration: selectedDuration };
-            setSequence([...sequence, newItem]);
-            audioService.playNote(note, 0.4);
-          };
+          const addNote = (note) => { const newItem = { note, duration: selectedDuration }; setSequence([...sequence, newItem]); audioService.playNote(note, 0.4); };
           const undo = () => { setSequence(prev => prev.slice(0, -1)); };
           const requestClear = (e) => { e.preventDefault(); e.stopPropagation(); setShowClearModal(true); };
           const confirmClear = () => { setSequence([]); setShowClearModal(false); };
-          
-          const getNoteValue = (noteStr) => {
-            const match = noteStr.match(/^([A-G][#]?)(-?\d+)$/);
-            if (!match) return 0;
-            const [_, name, octaveStr] = match;
-            const octave = parseInt(octaveStr, 10);
-            const noteIndex = NOTES.indexOf(name);
-            return (octave * 12) + noteIndex;
-          };
-
+          const getNoteValue = (noteStr) => { const match = noteStr.match(/^([A-G][#]?)(-?\d+)$/); if (!match) return 0; const [_, name, octaveStr] = match; const octave = parseInt(octaveStr, 10); const noteIndex = NOTES.indexOf(name); return (octave * 12) + noteIndex; };
           const handleSave = () => {
             if (!scaleName.trim()) { alert("Por favor, ingresa un nombre para la escala."); return; }
             if (sequence.length === 0) { alert("Por favor, añade al menos una nota."); return; }
-
             const rootNoteValue = getNoteValue(sequence[0].note);
-            const relativeNotes = sequence.map(s => ({
-              interval: getNoteValue(s.note) - rootNoteValue,
-              duration: s.duration
-            }));
-
+            const relativeNotes = sequence.map(s => ({ interval: getNoteValue(s.note) - rootNoteValue, duration: s.duration }));
             try {
               const savedScales = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
               if (id) {
@@ -454,92 +479,22 @@
           const playSequence = async () => { if (sequence.length === 0) return; await audioService.playSequence(sequence, 120); };
           const durationLabels = { whole: 'Redonda', half: 'Blanca', quarter: 'Negra', eighth: 'Corchea' };
           const baseNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
-          const whiteKeys = [
-            ...baseNotes.map(n => `${n}${currentOctave}`),
-            `C${currentOctave + 1}`
-          ];
+          const whiteKeys = [ ...baseNotes.map(n => `${n}${currentOctave}`), `C${currentOctave + 1}` ];
           const blackKeysConfig = [ { noteBase: 'C#', left: '8.5%' }, { noteBase: 'D#', left: '21%' }, { noteBase: 'F#', left: '46%' }, { noteBase: 'G#', left: '58.5%' }, { noteBase: 'A#', left: '71%' } ];
-
           return (
             <div className="relative flex h-screen w-full flex-col overflow-hidden max-w-md mx-auto bg-[#0b0f17] shadow-2xl text-white font-display">
-              <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5">
-                <button type="button" onClick={() => navigate('/scales')} className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer" aria-label="Cerrar"><span className="material-symbols-outlined text-[36px] pointer-events-none">close</span></button>
-                <h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1>
-                <button type="button" onClick={handleSave} className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer">{id ? 'Listo' : 'Guardar'}</button>
-              </header>
+              <header className="flex items-center justify-between p-4 shrink-0 relative z-[400] bg-[#0b0f17] border-b border-white/5"><button type="button" onClick={() => navigate('/scales')} className="flex items-center justify-center size-12 text-slate-400 hover:text-white transition-colors active:scale-90 cursor-pointer" aria-label="Cerrar"><span className="material-symbols-outlined text-[36px] pointer-events-none">close</span></button><h1 className="text-xl font-bold tracking-tight">{id ? 'Editar Escala' : 'Nueva Escala'}</h1><button type="button" onClick={handleSave} className="bg-primary px-5 h-10 rounded-xl text-white font-black text-xs uppercase tracking-widest active:scale-95 shadow-glow cursor-pointer">{id ? 'Listo' : 'Guardar'}</button></header>
               <main className="flex-1 overflow-y-auto no-scrollbar pb-[420px] px-5 pt-6 relative z-10">
-                <div className="mb-6">
-                  <label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label>
-                  <input value={scaleName} onChange={(e) => setScaleName(e.target.value)} className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="Ej. Mi Escala..." />
-                </div>
-                <div className="mb-8">
-                  <span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span>
-                  <div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">
-                    {['whole', 'half', 'quarter', 'eighth'].map((dur) => (
-                      <button key={dur} type="button" onClick={() => setSelectedDuration(dur)} className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}>{durationLabels[dur]}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-2 flex items-center justify-between relative z-[100]">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>
-                    {sequence.length > 0 && (<button type="button" onClick={requestClear} className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all">Limpiar</button>)}
-                  </div>
-                </div>
-                <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4">
-                  <div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}</div>
-                  <div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">
-                    {sequence.length === 0 ? (
-                      <div className="w-full text-center flex flex-col items-center gap-2 opacity-30"><span className="material-symbols-outlined text-4xl">music_note</span><span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span></div>
-                    ) : (
-                      sequence.map((item, idx) => (
-                        <div key={idx} className="flex flex-col items-center gap-3 shrink-0">
-                          <div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}><span className="text-sm font-black text-white">{item.note}</span></div>
-                          <span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <div className="mb-6"><label className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Nombre</label><input value={scaleName} onChange={(e) => setScaleName(e.target.value)} className="w-full bg-[#161c27] border border-gray-800 rounded-2xl px-5 py-4 text-base focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="Ej. Mi Escala..." /></div>
+                <div className="mb-8"><span className="block text-xs font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Duración</span><div className="flex p-1.5 bg-[#1c1f27] rounded-2xl">{['whole', 'half', 'quarter', 'eighth'].map((dur) => (<button key={dur} type="button" onClick={() => setSelectedDuration(dur)} className={`flex-1 h-11 flex items-center justify-center rounded-xl text-[10px] font-black transition-all ${selectedDuration === dur ? 'bg-[#32394a] text-primary shadow-xl ring-1 ring-white/5' : 'text-slate-600'}`}>{durationLabels[dur]}</button>))}</div></div>
+                <div className="mb-2 flex items-center justify-between relative z-[100]"><h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">Secuencia Visual</h3><div className="flex items-center gap-3"><span className="text-[10px] text-primary font-black uppercase bg-primary/10 px-2 py-0.5 rounded-full">{sequence.length} Notas</span>{sequence.length > 0 && (<button type="button" onClick={requestClear} className="text-[10px] font-black text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 active:scale-90 cursor-pointer pointer-events-auto transition-all">Limpiar</button>)}</div></div>
+                <div className="h-44 bg-[#111620] border border-gray-800 rounded-3xl relative overflow-hidden flex items-center px-4 shadow-inner mt-4"><div className="absolute inset-0 flex flex-col justify-center gap-[12px] opacity-10 pointer-events-none px-6">{[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[1.5px] w-full bg-white"></div>)}</div><div className="flex gap-6 overflow-x-auto no-scrollbar w-full py-6 z-10 items-center">{sequence.length === 0 ? (<div className="w-full text-center flex flex-col items-center gap-2 opacity-30"><span className="material-symbols-outlined text-4xl">music_note</span><span className="text-[10px] font-black uppercase">Toca el piano para añadir notas</span></div>) : (sequence.map((item, idx) => (<div key={idx} className="flex flex-col items-center gap-3 shrink-0"><div className={`size-14 rounded-full flex items-center justify-center shadow-2xl ring-4 ${idx === sequence.length - 1 ? 'bg-primary ring-primary/20 scale-110' : 'bg-[#32394a] ring-white/5'}`}><span className="text-sm font-black text-white">{item.note}</span></div><span className="text-[8px] font-black text-slate-500 uppercase">{durationLabels[item.duration].slice(0, 3)}</span></div>)))}</div></div>
               </main>
               <div className="absolute bottom-16 w-full bg-[#151921] border-t border-gray-800 shadow-[0_-15px_40px_rgba(0,0,0,0.6)] z-[200] flex flex-col pointer-events-auto">
-                <div className="flex items-center justify-between px-4 py-4 gap-2">
-                  <button type="button" onClick={playSequence} disabled={sequence.length === 0} className={`flex items-center gap-2 active:scale-95 transition-all shrink-0 ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}><span className="material-symbols-outlined fill-1 text-[36px] pointer-events-none">play_circle</span></button>
-                  <div className="flex items-center justify-center gap-1 bg-[#0b0f17] p-1 rounded-xl border border-white/5">
-                    {[3, 4, 5].map(oct => (
-                      <button key={oct} onClick={() => setCurrentOctave(oct)} className={`h-8 w-10 rounded-lg text-[10px] font-black transition-all ${currentOctave === oct ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>C{oct}</button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">undo</span></button>
-                    <button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">backspace</span></button>
-                  </div>
-                </div>
-                <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">
-                  {whiteKeys.map((note) => (
-                    <div key={note} onClick={() => addNote(note)} className="relative flex-1 bg-white border-r border-slate-300 rounded-b-2xl active:bg-slate-200 cursor-pointer shadow-inner"><span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">{note}</span></div>
-                  ))}
-                  {blackKeysConfig.map((bk) => {
-                    const noteName = `${bk.noteBase}${currentOctave}`;
-                    return (<div key={noteName} onClick={() => addNote(noteName)} style={{ left: bk.left }} className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"></div>);
-                  })}
-                </div>
+                <div className="flex items-center justify-between px-4 py-4 gap-2"><button type="button" onClick={playSequence} disabled={sequence.length === 0} className={`flex items-center gap-2 active:scale-95 transition-all shrink-0 ${sequence.length === 0 ? 'opacity-20 grayscale' : 'text-primary'}`}><span className="material-symbols-outlined fill-1 text-[36px] pointer-events-none">play_circle</span></button><div className="flex items-center justify-center gap-1 bg-[#0b0f17] p-1 rounded-xl border border-white/5">{[3, 4, 5].map(oct => (<button key={oct} onClick={() => setCurrentOctave(oct)} className={`h-8 w-10 rounded-lg text-[10px] font-black transition-all ${currentOctave === oct ? 'bg-primary text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}>C{oct}</button>))}</div><div className="flex items-center gap-3 shrink-0"><button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">undo</span></button><button type="button" onClick={undo} disabled={sequence.length === 0} className={`text-slate-500 active:text-white transition-all ${sequence.length === 0 ? 'opacity-20' : 'active:scale-90'} cursor-pointer`}><span className="material-symbols-outlined text-[28px] pointer-events-none">backspace</span></button></div></div>
+                <div className="relative h-64 w-full select-none bg-[#101622] flex border-t border-white/5">{whiteKeys.map((note) => (<div key={note} onClick={() => addNote(note)} className="relative flex-1 bg-white border-r border-slate-300 rounded-b-2xl active:bg-slate-200 cursor-pointer shadow-inner"><span className="absolute bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-400 uppercase pointer-events-none">{note}</span></div>))}{blackKeysConfig.map((bk) => { const noteName = `${bk.noteBase}${currentOctave}`; return (<div key={noteName} onClick={() => addNote(noteName)} style={{ left: bk.left }} className="absolute top-0 w-[10%] h-[55%] bg-[#1a1f2b] border border-black rounded-b-xl z-10 active:bg-slate-800 shadow-2xl cursor-pointer"></div>); })}</div>
               </div>
-              {showClearModal && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                  <div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200">
-                    <div className="flex flex-col items-center text-center gap-4">
-                      <div className="size-16 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-1 border border-orange-500/20"><span className="material-symbols-outlined text-3xl">cleaning_services</span></div>
-                      <div><h3 className="text-xl font-bold mb-2 text-white">¿Limpiar Notas?</h3><p className="text-sm text-gray-400 leading-relaxed">¿Deseas borrar toda la secuencia de notas actual?</p></div>
-                      <div className="flex gap-3 w-full mt-3">
-                        <button onClick={() => setShowClearModal(false)} className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Cancelar</button>
-                        <button onClick={confirmClear} className="flex-1 h-12 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all active:scale-95">Borrar Todo</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {showClearModal && (<div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"><div className="bg-[#161c27] rounded-3xl p-6 shadow-2xl max-w-xs w-full border border-gray-700 transform scale-100 animate-in zoom-in-95 duration-200"><div className="flex flex-col items-center text-center gap-4"><div className="size-16 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 mb-1 border border-orange-500/20"><span className="material-symbols-outlined text-3xl">cleaning_services</span></div><div><h3 className="text-xl font-bold mb-2 text-white">¿Limpiar Notas?</h3><p className="text-sm text-gray-400 leading-relaxed">¿Deseas borrar toda la secuencia de notas actual?</p></div><div className="flex gap-3 w-full mt-3"><button onClick={() => setShowClearModal(false)} className="flex-1 h-12 rounded-xl font-bold text-gray-300 bg-gray-800 hover:bg-gray-700 transition-colors">Cancelar</button><button onClick={confirmClear} className="flex-1 h-12 rounded-xl font-bold text-white bg-orange-500 hover:bg-orange-600 shadow-lg shadow-orange-500/30 transition-all active:scale-95">Borrar Todo</button></div></div></div></div>)}
               <BottomNav activeTab="scales" />
             </div>
           );
@@ -547,7 +502,7 @@
 
         const App = () => (
             <HashRouter>
-                <div className="max-w-md mx-auto bg-background-light dark:bg-background-dark min-h-screen shadow-2xl overflow-hidden relative border-x border-gray-200 dark:border-gray-800">
+                <div className="max-w-md md:max-w-4xl mx-auto bg-background-light dark:bg-background-dark min-h-screen shadow-2xl overflow-hidden relative border-x border-gray-200 dark:border-gray-800">
                     <Routes>
                         <Route path="/" element={<HomeScreen />} />
                         <Route path="/metronome" element={<MetronomeScreen />} />

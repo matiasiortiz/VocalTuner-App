@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>VocalTuner</title>
+    <title>VocalTune & Coro</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com" rel="preconnect"/>
     <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -39,6 +39,22 @@
             overflow-x: hidden;
             user-select: none;
         }
+        /* Custom Scrollbar for Desktop Compatibility */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b4354;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #135bec;
+        }
+
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -46,6 +62,13 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* Enable custom thin scrollbars for horizontal areas on desktop */
+        .custom-scrollbar-h {
+            scrollbar-width: thin;
+            scrollbar-color: #3b4354 transparent;
+        }
+
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }

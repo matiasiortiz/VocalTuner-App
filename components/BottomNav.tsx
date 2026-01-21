@@ -24,15 +24,17 @@ interface BottomNavProps {
 }
 
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab }) => (
-  <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 max-w-md mx-auto px-4 shadow-lg backdrop-blur-md bg-opacity-95">
-    <div className="flex items-center justify-around h-16">
-      <NavButton to="/" icon="home" label="Inicio" active={activeTab === 'home'} />
-      <NavButton to="/scales" icon="library_music" label="Escalas" active={activeTab === 'scales'} />
-      <NavButton to="/health" icon="health_and_safety" label="Salud" active={activeTab === 'health'} />
-      <NavButton to="/metronome" icon="timer" label="Tempo" active={activeTab === 'metronome'} />
-    </div>
-    <div className="h-1.5 flex justify-center pb-2">
-      <div className="w-32 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+  <nav className="fixed bottom-0 left-0 right-0 z-[100] bg-white dark:bg-[#151b26] border-t border-slate-200 dark:border-slate-800 shadow-lg backdrop-blur-md bg-opacity-95">
+    <div className="max-w-screen-2xl mx-auto px-4">
+      <div className="flex items-center justify-around h-16 max-w-2xl mx-auto">
+        <NavButton to="/" icon="home" label="Inicio" active={activeTab === 'home'} />
+        <NavButton to="/scales" icon="library_music" label="Escalas" active={activeTab === 'scales'} />
+        <NavButton to="/health" icon="health_and_safety" label="Salud" active={activeTab === 'health'} />
+        <NavButton to="/metronome" icon="timer" label="Tempo" active={activeTab === 'metronome'} />
+      </div>
+      <div className="h-1.5 flex justify-center pb-2">
+        <div className="w-32 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+      </div>
     </div>
   </nav>
 );
