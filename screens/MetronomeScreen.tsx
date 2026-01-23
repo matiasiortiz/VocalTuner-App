@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import BottomNav from '../components/BottomNav';
 
 type TimeSignature = '4/4' | '3/4' | '6/8';
 
@@ -169,10 +168,6 @@ const MetronomeScreen: React.FC = () => {
           </div>
         </div>
       </main>
-      
-      <div className="block landscape:hidden">
-         <BottomNav />
-      </div>
     </div>
   );
 };
