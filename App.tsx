@@ -9,7 +9,7 @@ import BottomNav from './components/BottomNav';
 
 const App: React.FC = () => {
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="w-full max-w-screen-2xl mx-auto bg-background-light dark:bg-background-dark min-h-screen shadow-2xl relative border-x border-gray-200 dark:border-gray-800 flex flex-col">
         <div className="flex-1 w-full h-full">
           <Routes>

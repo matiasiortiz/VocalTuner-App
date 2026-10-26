@@ -27,7 +27,7 @@ const CreateScaleScreen: React.FC = () => {
   const addNote = (note: string) => {
     const newItem: SequenceNote = { note, duration: selectedDuration };
     setSequence([...sequence, newItem]);
-    audioService.playNote(note, 0.4);
+    audioService.playNote(note, 1.1);
   };
   const undo = () => setSequence(prev => prev.slice(0, -1));
   const confirmClear = () => { setSequence([]); setShowClearModal(false); };
@@ -38,7 +38,7 @@ const CreateScaleScreen: React.FC = () => {
     return (parseInt(match[2], 10) * 12) + noteIndex;
   };
   const handleSave = () => {
-    if (!scaleName.trim() || sequence.length === 0) { alert("Nombre y notas requeridas."); return; }
+    if (!scaleName.trim() || sequence.length === 0) { return; }
     const rootNoteValue = getNoteValue(sequence[0].note);
     const relativeNotes: RelativeNote[] = sequence.map(s => ({ interval: getNoteValue(s.note) - rootNoteValue, duration: s.duration }));
     try {
@@ -52,7 +52,14 @@ const CreateScaleScreen: React.FC = () => {
       navigate('/scales');
     } catch (e) {}
   };
-  const playSequence = async () => sequence.length > 0 && await audioService.playSequence(sequence, 120);
+  const playSequence = async () => {
+    if (sequence.length === 0) return;
+    let savedBpm = 120;
+    try {
+      savedBpm = Number(localStorage.getItem('vocal_bpm')) || 120;
+    } catch (e) {}
+    await audioService.playSequence(sequence, savedBpm);
+  };
 
   const durationLabels: Record<DurationType, string> = { whole: 'Redonda', half: 'Blanca', quarter: 'Negra', eighth: 'Corchea' };
   const baseNotes = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];

@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { audioService } from '../services/audioService';
 import { ScaleItem, RelativeNote, SequenceNote } from '../types';
@@ -14,7 +13,18 @@ const ScalesScreen: React.FC = () => {
   const [selectedNote, setSelectedNote] = useState("C");
   const [startOctave, setStartOctave] = useState(3);
   const [endOctave, setEndOctave] = useState(4);
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('vocal_bpm'));
+      return saved >= 40 && saved <= 240 ? saved : 120;
+    } catch (e) {
+      return 120;
+    }
+  });
+
+  const playSessionRef = useRef(0);
+  const bpmRef = useRef(bpm);
+  bpmRef.current = bpm;
 
   const loadScales = () => {
     try {
@@ -29,24 +39,23 @@ const ScalesScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadScales(); }, []);
+  useEffect(() => {
+    loadScales();
+    audioService.setBpm(bpmRef.current);
+    return () => {
+      playSessionRef.current++;
+      audioService.stop();
+    };
+  }, []);
 
-  const playCustom = async (e: React.MouseEvent, scale: ScaleItem) => {
-    e.preventDefault(); e.stopPropagation();
-    if (playingId === scale.id) { audioService.stop(); setPlayingId(null); return; }
-    if (playingId) { audioService.stop(); }
-    setPlayingId(scale.id);
-    if (scale.relativeNotes && scale.relativeNotes.length > 0) {
-      await audioService.playCustomElasticScale(selectedNote, startOctave, endOctave, scale.relativeNotes, bpm);
-    } else {
-      const calculatedRelatives = calculateRelativesFromAbsolute(scale.notes);
-      if (calculatedRelatives.length > 0) {
-         await audioService.playCustomElasticScale(selectedNote, startOctave, endOctave, calculatedRelatives, bpm);
-      } else {
-        await audioService.playSequence(scale.notes, bpm);
-      }
-    }
-    setPlayingId(null);
+  const updateBpm = (nextVal: number) => {
+    const clamped = Math.max(40, Math.min(240, Math.round(nextVal)));
+    bpmRef.current = clamped;
+    setBpm(clamped);
+    audioService.setBpm(clamped);
+    try {
+      localStorage.setItem('vocal_bpm', String(clamped));
+    } catch (e) { }
   };
 
   const calculateRelativesFromAbsolute = (notes: SequenceNote[]): RelativeNote[] => {
@@ -60,10 +69,87 @@ const ScalesScreen: React.FC = () => {
     return notes.map(n => ({ interval: getVal(n.note) - rootVal, duration: n.duration }));
   };
 
+  const startCustomPlayback = async (
+    scale: ScaleItem,
+    noteToPlay: string,
+    startOct: number,
+    endOct: number,
+    bpmToPlay: number
+  ) => {
+    const sessionId = ++playSessionRef.current;
+    audioService.stop();
+    setPlayingId(scale.id);
+    audioService.setBpm(bpmToPlay);
+
+    try {
+      if (scale.relativeNotes && scale.relativeNotes.length > 0) {
+        await audioService.playCustomElasticScale(noteToPlay, startOct, endOct, scale.relativeNotes, bpmToPlay);
+      } else {
+        const calculatedRelatives = calculateRelativesFromAbsolute(scale.notes);
+        if (calculatedRelatives.length > 0) {
+          await audioService.playCustomElasticScale(noteToPlay, startOct, endOct, calculatedRelatives, bpmToPlay);
+        } else {
+          await audioService.playSequence(scale.notes, bpmToPlay);
+        }
+      }
+    } finally {
+      if (playSessionRef.current === sessionId) {
+        setPlayingId(null);
+      }
+    }
+  };
+
+  const playCustom = (e: React.MouseEvent, scale: ScaleItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (playingId === scale.id) {
+      playSessionRef.current++;
+      audioService.stop();
+      setPlayingId(null);
+      return;
+    }
+    startCustomPlayback(scale, selectedNote, startOctave, endOctave, bpmRef.current);
+  };
+
+  const handleNoteChange = (nextNote: string) => {
+    setSelectedNote(nextNote);
+    if (playingId) {
+      const activeScale = customScales.find(s => s.id === playingId);
+      if (activeScale) {
+        startCustomPlayback(activeScale, nextNote, startOctave, endOctave, bpmRef.current);
+      }
+    }
+  };
+
+  const handleStartOctChange = (nextOct: number) => {
+    setStartOctave(nextOct);
+    if (playingId) {
+      const activeScale = customScales.find(s => s.id === playingId);
+      if (activeScale) {
+        startCustomPlayback(activeScale, selectedNote, nextOct, endOctave, bpmRef.current);
+      }
+    }
+  };
+
+  const handleEndOctChange = (nextOct: number) => {
+    setEndOctave(nextOct);
+    if (playingId) {
+      const activeScale = customScales.find(s => s.id === playingId);
+      if (activeScale) {
+        startCustomPlayback(activeScale, selectedNote, startOctave, nextOct, bpmRef.current);
+      }
+    }
+  };
+
   const requestDelete = (e: React.MouseEvent, id: string) => { e.preventDefault(); e.stopPropagation(); setScaleToDelete(id); };
   const confirmDelete = () => {
     if (!scaleToDelete) return;
     try {
+      if (playingId === scaleToDelete) {
+        playSessionRef.current++;
+        audioService.stop();
+        setPlayingId(null);
+      }
       const saved = JSON.parse(localStorage.getItem('vocal_scales') || '[]');
       const updated = saved.filter((s: any) => s.id.toString() !== scaleToDelete.toString());
       localStorage.setItem('vocal_scales', JSON.stringify(updated));
@@ -85,18 +171,34 @@ const ScalesScreen: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-6 max-w-screen-2xl mx-auto items-center">
           <div className="flex flex-col gap-1 w-full lg:w-1/4">
              <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Configuración Maestro</h3>
-             <div className="flex gap-3">
+             <div className="flex items-center gap-2 flex-wrap">
                <span className="text-xs bg-primary/20 text-primary px-3 py-1.5 rounded-lg font-black border border-primary/30 uppercase tracking-tighter">
                  {selectedNote} {startOctave}-{endOctave} Oct
                </span>
-               <span className="text-xs bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg font-black border border-gray-700 uppercase tracking-tighter">
-                 {bpm} BPM
-               </span>
+               <div className="flex items-center gap-1">
+                 <button
+                   type="button"
+                   onClick={() => updateBpm(bpm - 5)}
+                   className="size-7 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center border border-gray-700 active:scale-90 transition-all"
+                 >
+                   <span className="material-symbols-outlined text-sm">remove</span>
+                 </button>
+                 <span className="text-xs bg-gray-800 text-gray-200 px-3 py-1.5 rounded-lg font-black border border-gray-700 uppercase tracking-tighter min-w-[76px] text-center">
+                   {bpm} BPM
+                 </span>
+                 <button
+                   type="button"
+                   onClick={() => updateBpm(bpm + 5)}
+                   className="size-7 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center border border-gray-700 active:scale-90 transition-all"
+                 >
+                   <span className="material-symbols-outlined text-sm">add</span>
+                 </button>
+               </div>
              </div>
           </div>
           <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3 w-full lg:flex-1">
              <div className="relative">
-               <select value={selectedNote} onChange={(e) => setSelectedNote(e.target.value)} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
+               <select value={selectedNote} onChange={(e) => handleNoteChange(e.target.value)} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
                  {NOTES.map(n => <option key={n} value={n}>{n}</option>)}
                </select>
                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
@@ -104,7 +206,7 @@ const ScalesScreen: React.FC = () => {
                </div>
              </div>
              <div className="relative">
-               <select value={startOctave} onChange={(e) => setStartOctave(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
+               <select value={startOctave} onChange={(e) => handleStartOctChange(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
                  {[2, 3, 4, 5].map(n => <option key={n} value={n}>Octava {n}</option>)}
                </select>
                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
@@ -112,18 +214,17 @@ const ScalesScreen: React.FC = () => {
                </div>
              </div>
              <div className="relative">
-               <select value={endOctave} onChange={(e) => setEndOctave(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
+               <select value={endOctave} onChange={(e) => handleEndOctChange(Number(e.target.value))} className="w-full h-11 bg-[#1c2333] border border-gray-700 rounded-xl text-sm font-bold px-4 appearance-none outline-none focus:border-primary transition-all">
                  {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>Octava {n}</option>)}
                </select>
                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                  <span className="material-symbols-outlined text-sm">expand_more</span>
                </div>
              </div>
-             <div className="col-span-3 lg:col-span-1 flex items-center px-2">
+             <div className="col-span-3 lg:col-span-1 flex items-center px-2 h-11">
                <input 
-                type="range" min="40" max="240" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} 
+                type="range" min="40" max="240" step="1" value={bpm} onChange={(e) => updateBpm(Number(e.target.value))} 
                 className="w-full h-2 bg-[#1c2333] rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none z-10" 
-                style={{ backgroundImage: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(240-40)*100}%, #1c2333 ${(bpm-40)/(240-40)*100}%, #1c2333 100%)` }} 
                />
              </div>
           </div>

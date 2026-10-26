@@ -1,7 +1,10 @@
 {
   "name": "VocalTuner",
-  "description": "Una aplicación avanzada de vocalización y coro con entrenamiento de escalas interactivas, metrónomo profesional y recursos de salud vocal.",
+  "description": "Una aplicación avanzada de vocalización y coro con entrenamiento de escalas interactivas, piano acústico en tiempo real, metrónomo profesional y recursos de salud vocal.",
   "requestFramePermissions": [
     "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }

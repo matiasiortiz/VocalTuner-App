@@ -5,7 +5,14 @@ type TimeSignature = '4/4' | '3/4' | '6/8';
 
 const MetronomeScreen: React.FC = () => {
   const navigate = useNavigate();
-  const [bpm, setBpm] = useState(120);
+  const [bpm, setBpm] = useState<number>(() => {
+    try {
+      const saved = Number(localStorage.getItem('vocal_bpm'));
+      return saved >= 40 && saved <= 220 ? saved : 120;
+    } catch (e) {
+      return 120;
+    }
+  });
   const [isPlaying, setIsPlaying] = useState(false);
   const [beat, setBeat] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
@@ -14,6 +21,15 @@ const MetronomeScreen: React.FC = () => {
 
   const timerRef = useRef<number | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const beatRef = useRef(0);
+
+  const updateBpm = (nextVal: number) => {
+    const clamped = Math.max(40, Math.min(220, Math.round(nextVal)));
+    setBpm(clamped);
+    try {
+      localStorage.setItem('vocal_bpm', String(clamped));
+    } catch (e) { }
+  };
 
   const getTempoName = (currentBpm: number) => {
     if (currentBpm <= 60) return 'Largo';
@@ -25,7 +41,7 @@ const MetronomeScreen: React.FC = () => {
     return 'Presto';
   };
 
-  const playClick = () => {
+  const playClick = (currentBeat: number) => {
     if (isMuted) return;
     if (!audioCtxRef.current) {
       audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -37,7 +53,7 @@ const MetronomeScreen: React.FC = () => {
     const gain = ctx.createGain();
 
     osc.type = 'sine';
-    const isFirstBeat = beat === 0;
+    const isFirstBeat = currentBeat === 0;
     osc.frequency.setValueAtTime(isFirstBeat ? 1000 : 500, ctx.currentTime);
     
     gain.gain.setValueAtTime(0.4, ctx.currentTime);
@@ -63,7 +79,7 @@ const MetronomeScreen: React.FC = () => {
       const averageInterval = intervals.reduce((a, b) => a + b) / intervals.length;
       const newBpm = Math.round(60000 / averageInterval);
       if (newBpm >= 40 && newBpm <= 220) {
-        setBpm(newBpm);
+        updateBpm(newBpm);
       }
     }
   };
@@ -74,15 +90,18 @@ const MetronomeScreen: React.FC = () => {
       const interval = (60 / bpm) * 1000;
       if (timerRef.current) clearInterval(timerRef.current);
       timerRef.current = window.setInterval(() => {
-        setBeat(prev => (prev + 1) % beatsInCompas);
-        playClick();
+        const nextBeat = (beatRef.current + 1) % beatsInCompas;
+        beatRef.current = nextBeat;
+        setBeat(nextBeat);
+        playClick(nextBeat);
       }, interval);
     } else {
       if (timerRef.current) clearInterval(timerRef.current);
+      beatRef.current = 0;
       setBeat(0);
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [isPlaying, bpm, beat, timeSignature, isMuted]);
+  }, [isPlaying, bpm, timeSignature, isMuted]);
 
   return (
     <div className="bg-[#0b0f17] font-display antialiased text-white min-h-screen flex flex-col relative w-full overflow-hidden pb-24 landscape:pb-0">
@@ -126,8 +145,8 @@ const MetronomeScreen: React.FC = () => {
               <h1 className="text-6xl md:text-8xl landscape:text-8xl lg:text-9xl font-black tracking-tighter leading-none mb-1 drop-shadow-lg transition-all">{bpm}</h1>
               <p className="text-primary font-black text-[9px] md:text-xs tracking-[0.3em] uppercase opacity-90 text-center px-4">Beats Per Minute</p>
               
-              <button onClick={() => setBpm(b => Math.max(40, b - 1))} className="absolute left-[-15px] md:left-[-25px] landscape:left-[-30px] size-10 md:size-14 landscape:size-16 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c] z-20"><span className="material-symbols-outlined text-xl md:text-3xl landscape:text-3xl">remove</span></button>
-              <button onClick={() => setBpm(b => Math.min(220, b + 1))} className="absolute right-[-15px] md:right-[-25px] landscape:right-[-30px] size-10 md:size-14 landscape:size-16 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c] z-20"><span className="material-symbols-outlined text-xl md:text-3xl landscape:text-3xl">add</span></button>
+              <button onClick={() => updateBpm(bpm - 1)} className="absolute left-[-15px] md:left-[-25px] landscape:left-[-30px] size-10 md:size-14 landscape:size-16 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c] z-20"><span className="material-symbols-outlined text-xl md:text-3xl landscape:text-3xl">remove</span></button>
+              <button onClick={() => updateBpm(bpm + 1)} className="absolute right-[-15px] md:right-[-25px] landscape:right-[-30px] size-10 md:size-14 landscape:size-16 rounded-full bg-[#1c2333] flex items-center justify-center active:scale-90 transition-transform shadow-2xl border-2 border-white/5 hover:bg-[#252c3c] z-20"><span className="material-symbols-outlined text-xl md:text-3xl landscape:text-3xl">add</span></button>
             </div>
           </div>
 
@@ -141,7 +160,7 @@ const MetronomeScreen: React.FC = () => {
                 <span className="text-lg md:text-2xl font-black text-primary uppercase tracking-widest drop-shadow-sm">{getTempoName(bpm)}</span>
               </div>
               <div className="w-full px-1">
-                <input type="range" min="40" max="220" value={bpm} onChange={(e) => setBpm(Number(e.target.value))} className="w-full h-3 bg-[#1c2333] rounded-full appearance-none cursor-pointer accent-primary" style={{ background: `linear-gradient(to right, #135bec 0%, #135bec ${(bpm-40)/(220-40)*100}%, #1c2333 ${(bpm-40)/(220-40)*100}%, #1c2333 100%)` }} />
+                <input type="range" min="40" max="220" step="1" value={bpm} onChange={(e) => updateBpm(Number(e.target.value))} className="w-full h-3 bg-[#1c2333] rounded-full appearance-none cursor-pointer accent-primary" />
                 <div className="flex justify-between mt-3 text-[9px] md:text-[10px] font-black text-gray-600 tracking-[0.2em] uppercase"><span>Adagio</span><span>Andante</span><span>Presto</span></div>
               </div>
             </div>
